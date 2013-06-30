@@ -40,18 +40,18 @@ class Config
 	 * PHP overload method for getting unknown variables
 	 * @name __get
 	 * @access public
-	 * @param string $in_name			The name of the variable request
+	 * @param string $name				The name of the variable request
 	 * @return mixed
 	 */
-	public function __get(/*string*/ $in_name)
+	public function __get(/*string*/ $name)
 	{
 		// If the value doesn't exist
-		if(!isset($this->aValues[$in_name]))
+		if(!isset($this->aValues[$name]))
 		{
 			return null;
 		}
 
-		return $this->aValues[$in_name];
+		return $this->aValues[$name];
 	}
 
 	/**
@@ -62,9 +62,9 @@ class Config
 	 * @param string $in_name			The name of the variable to check
 	 * @return bool
 	 */
-	public function __isset(/*string*/ $in_name)
+	public function __isset(/*string*/ $name)
 	{
-		return isset($this->aValue[$in_name]);
+		return isset($this->aValue[$name]);
 	}
 
 	/**
@@ -84,43 +84,43 @@ class Config
 	 * Returns configuration values, the more arguments you send, the deeper the returned value
 	 * @name get
 	 * @access public
-	 * @param string $in_name			Name of the configuration value
-	 * @param mixed $in_default			The value to return if it's not found
+	 * @param string $name				Name of the configuration value
+	 * @param mixed $default			The value to return if it's not found
 	 * @return mixed
 	 */
-	public function get(/*string*/ $in_name = null, /*mixed*/ $in_default = null)
+	public function get(/*string*/ $name = null, /*mixed*/ $default = null)
 	{
 		// If the name wasn't sent
-		if(is_null($in_name))
+		if(is_null($name))
 		{
 			// Return the entire array
 			return $this->aValues;
 		}
 
 		// Split the name by colon
-		$aNames	= explode(':', $in_name);
+		$aNames	= explode(':', $name);
 		$iCount	= count($aNames);
 
 		// If the first name doesn't exist, return the default
-		if(!isset($this->aValues[$sNames[0]]))
+		if(!isset($this->aValues[$aNames[0]]))
 		{
-			return $in_default;
+			return $default;
 		}
 
 		// Set the first level
-		$mData	= $this->aValues[$sNames[0]];
+		$mData	= $this->aValues[$aNames[0]];
 
 		// Keep going through the names till we reach the end
 		for($i = 1; $i < $iCount; ++$i)
 		{
 			// If the data doesn't exist, return null
-			if(!isset($mData[$sNames[$i]]))
+			if(!isset($mData[$aNames[$i]]))
 			{
-				return $in_default;
+				return $default;
 			}
 
 			// Set the current level and loop around
-			$mData	= $mData[$sNames[$i]];
+			$mData	= $mData[$aNames[$i]];
 		}
 
 		// Return the last data we found
@@ -133,23 +133,24 @@ class Config
 	 * @name load
 	 * @access public
 	 * @static
-	 * @param string $in_filename		Full or relative path to the configuration file
+	 * @param string $filename			Full or relative path to the configuration file
 	 * @return bool
 	 */
-	public function load(/*string*/ $in_filename)
+	public function load(/*string*/ $filename)
 	{
 		// Check if the file doesn't exists
-		if(!file_exists($in_filename))
+		if(!file_exists($filename))
 		{
 			return false;
 		}
 
 		// Include the array the config file returns
-		$this->aValues	= include $in_filename;
+		$this->aValues	= include $filename;
 
 		// If the return value isn't an array the file isn't done properly
 		if(!is_array($this->aValues))
 		{
+			$this->aValues	= array();
 			return false;
 		}
 
@@ -162,19 +163,19 @@ class Config
 	 * Loads a config file from an XML, converts it to a PHP array, and stores it in memory
 	 * @name loadFromXML
 	 * @access public
-	 * @param string $in_filename		Full or relative path to the XML file
+	 * @param string $filename			Full or relative path to the XML file
 	 * @return bool
 	 */
-	public function loadFromXML(/*string*/ $in_filename)
+	public function loadFromXML(/*string*/ $filename)
 	{
 		// Check if the file doesn't exists
-		if(!file_exists($in_filename))
+		if(!file_exists($filename))
 		{
 			return false;
 		}
 
 		// If it does, load it into memory
-		$sXML	= file_get_contents($in_filename);
+		$sXML	= file_get_contents($filename);
 
 		// Pass the file to SimpleXML
 		$oXML	= new SimpleXMLElement($sXML);
@@ -196,10 +197,10 @@ class Config
 	 * @param string $in_filename		Full or relative path to save the configuration file
 	 * @return bool
 	 */
-	public function save(/*string*/ $in_filename)
+	public function save(/*string*/ $filename)
 	{
 		// Try to save the file
-		$mRet	= file_put_contents($in_filename, $this->generate(), LOCK_EX);
+		$mRet	= file_put_contents($filename, $this->generate(), LOCK_EX);
 
 		// If we got false, we failed
 		return ($mRet === false) ? false : true;
@@ -214,13 +215,13 @@ class Config
 	 * @param SimpleXMLElement $in_xml	The element to convert
 	 * @return array
 	 */
-	private static function xmlToArray(SimpleXMLElement $in_xml)
+	private static function xmlToArray(SimpleXMLElement $xml)
 	{
 		// Init return array
 		$aRet	= array();
 
 		// Go through every child of the element
-		foreach($in_xml->children(null, true) as $oSimpleXML)
+		foreach($xml->children(null, true) as $oSimpleXML)
 		{
 			// Get the name
 			$sName	= strtolower($oSimpleXML->getName());
