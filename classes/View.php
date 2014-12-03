@@ -1,37 +1,47 @@
 <?php
 /**
- * For displaying and writing templates
+ * View
  *
- * @author chris nasr
- * @copyright fuel for the fire
- * @package core
+ * @author Chris Nasr
+ * @copyright FUEL for the FIRE
  * @version 0.1
- * @created 2011-04-04
+ * @created 2014-12-02
  */
 
 /**
- * Template class
- * @name Template
- * @package core
+ * View class
+ *
+ * Class for displaying templates
+ *
+ * @name _View
  */
-class Template
+class _View
 {
 	/**
+	 * Paths
+	 *
 	 * List of paths to look for templates in
-	 * @var array						of strings
+	 *
+	 * @var string[]
 	 * @access private
 	 */
 	private $_aPaths;
 
 	/**
+	 * Values
+	 *
 	 * Name/Value pairs
+	 *
 	 * @var array						of mixed
 	 * @access private
 	 */
 	private $_aValues;
 
 	/**
+	 * Source
+	 *
 	 * The source file to run/parse
+	 *
 	 * @var string
 	 * @access private
 	 */
@@ -39,81 +49,92 @@ class Template
 
 	/**
 	 * Constructor
+	 *
 	 * Initializes the object
-	 * @name Template
+	 *
+	 * @name _View
 	 * @access public
-	 * @return Template
+	 * @param string $source			View source
+	 * @return _View
 	 */
-	public function __construct()
+	public function __construct(/*string*/ $source = null)
 	{
 		// Always add the current path
 		$this->_aPaths	= array('./');
 
 		// Init the source to null
-		$this->_sSource	= null;
+		$this->_sSource = $source;
 	}
 
 	/**
 	 * Add Path
+	 *
 	 * Add a path to the instance, when we look up a file we use these paths
+	 *
 	 * @name addPath
 	 * @access public
-	 * @param string $in_path			Path to add
+	 * @param string $path			Path to add
 	 * @return void
 	 */
-	public function addPath(/*string*/ $in_path)
+	public function addPath(/*string*/ $path)
 	{
 		// Check the path ends with a slash
-		if(substr($in_path, -1) != '/')
+		if(substr($path, -1) != '/')
 		{
-			$in_path	.= '/';
+			$path	.= '/';
 		}
 
 		// Add it to the list
-		$this->_aPaths[]	= $in_path;
+		$this->_aPaths[]	= $path;
 	}
 
 	/**
 	 * Assign
+	 *
 	 * Assign a value to a name
+	 *
 	 * @name assign
 	 * @access public
-	 * @param string $in_name			Name of variable
-	 * @param mixed $in_value			Value
+	 * @param string $name			Name of variable
+	 * @param mixed $value			Value
 	 * @return void
 	 */
-	public function assign(/*string*/ $in_name, /*mixed*/ $in_value)
+	public function assign(/*string*/ $name, /*mixed*/ $value)
 	{
-		$this->_aValues[$in_name]	= $in_value;
+		$this->_aValues[$name]	= $value;
 	}
 
 	/**
 	 * Assign Map
+	 *
 	 * This will overwrite all current variables in the template with the ones sent
+	 *
 	 * @name assignMap
 	 * @access public
-	 * @param array $in_map				Array with index being the names of the variables to set
+	 * @param array $map				Array with index being the names of the variables to set
 	 * @return void
 	 */
-	public function assignMap(array $in_map)
+	public function assignMap(array $map)
 	{
-		$this->_aValues	= $in_map;
+		$this->_aValues = $map;
 	}
 
 	/**
 	 * Source
+	 *
 	 * Set and/or get the source file
+	 *
 	 * @name source
 	 * @access public
-	 * @param string $in_filename		The filename of the source
+	 * @param string $filename		The filename of the source
 	 * @return string
 	 */
-	public function source(/*string*/ $in_filename = null)
+	public function source(/*string*/ $filename = null)
 	{
 		// If the argument is a string, store it to the source
-		if(is_string($in_filename))
+		if(is_string($filename))
 		{
-			$this->_sSource	= $in_filename;
+			$this->_sSource = $filename;
 		}
 
 		// Return the current source value
@@ -122,42 +143,46 @@ class Template
 
 	/**
 	 * Display
+	 *
 	 * Prints out a template to the screen
+	 *
 	 * @name display
 	 * @access public
-	 * @param string $in_filename		Full or relative path to a template
+	 * @param string $filename		Full or relative path to a template
 	 * @return void
 	 */
-	public function display(/*string*/ $in_filename = null)
+	public function display(/*string*/ $filename = null)
 	{
-		echo $this->fetch($in_filename);
+		echo $this->fetch($filename);
 	}
 
 	/**
 	 * Fetch
+	 *
 	 * Fetch and return a template
+	 *
 	 * @name fetch
 	 * @access public
-	 * @param string $in_filename		Full or relative path to a template
+	 * @param string $filename		Full or relative path to a template
 	 * @return string
 	 */
-	public function fetch(/*string*/ $in_filename = null)
+	public function fetch(/*string*/ $filename = null)
 	{
 		$sFilename	= null;
 
 		// If no filename was passed and we have one stored in the instance, use
 		//	it
-		if(is_null($in_filename) && !is_null($this->_sSource))
+		if(is_null($filename) && !is_null($this->_sSource))
 		{
-			$in_filename	= $this->_sSource;
+			$filename	= $this->_sSource;
 		}
 
 		// Check if the passed filename is specific or we should use the paths
-		if(preg_match('/^(?:\.\.\/|\.\/|\/)/', $in_filename))
+		if(preg_match('/^(?:\.\.\/|\.\/|\/)/', $filename))
 		{
-			if(file_exists($in_filename))
+			if(file_exists($filename))
 			{
-				$sFilename	= $in_filename;
+				$sFilename	= $filename;
 			}
 		}
 		else
@@ -165,9 +190,9 @@ class Template
 			// Go through each path looking for the file
 			foreach($this->_aPaths as $sPath)
 			{
-				if(file_exists($sPath . $in_filename))
+				if(file_exists($sPath . $filename))
 				{
-					$sFilename	= $sPath . $in_filename;
+					$sFilename	= $sPath . $filename;
 				}
 			}
 		}
@@ -183,7 +208,7 @@ class Template
 		// The file wasn't found, throw an error
 		$aBT	= debug_backtrace();
 		trigger_error(
-			"Couldn't load template \"{$in_filename}\" in {$aBT[0]['file']} on line {$aBT[0]['line']}.",
+			"Couldn't load template \"{$filename}\" in {$aBT[0]['file']} on line {$aBT[0]['line']}.",
 			E_USER_WARNING
 		);
 		return null;
@@ -191,38 +216,42 @@ class Template
 
 	/**
 	 * __set
+	 *
 	 * Called when unknown variables are set, works the same as the assign method
+	 *
 	 * @name __set
 	 * @access public
-	 * @param string $in_name			Name of variable
-	 * @param mixed $in_value			Value
+	 * @param string $name			Name of variable
+	 * @param mixed $value			Value
 	 * @return void
 	 */
-	public function __set(/*string*/ $in_name, /*mixed*/ $in_value)
+	public function __set(/*string*/ $name, /*mixed*/ $value)
 	{
-		$this->_aValues[$in_name]	= $in_value;
+		$this->_aValues[$name]	= $value;
 	}
 
 	/**
 	 * __get
+	 *
 	 * Called when unknown variables are requested
+	 *
 	 * @name __get
 	 * @access public
-	 * @param string $in_name			Name of variable
+	 * @param string $name			Name of variable
 	 * @return mixed
 	 */
-	public function __get(/*string*/ $in_name)
+	public function __get(/*string*/ $name)
 	{
-		if(array_key_exists($in_name, $this->_aValues))
+		if(array_key_exists($name, $this->_aValues))
 		{
-			return $this->_aValues[$in_name];
+			return $this->_aValues[$name];
 		}
 		else
 		{
 			// The variable wasn't found, so trigger an error with the file and line that called this
 			$aBT	= debug_backtrace();
 			trigger_error(
-				'Undefined property:  ' . __CLASS__ . '::$' . $in_name . ' in ' . $aBT[0]['file'] . ' on line ' . $aBT[0]['line'],
+				'Undefined property:  ' . __CLASS__ . '::$' . $name . ' in ' . $aBT[0]['file'] . ' on line ' . $aBT[0]['line'],
 				E_USER_NOTICE
 			);
 			return null;
@@ -231,32 +260,36 @@ class Template
 
 	/**
 	 * __isset
+	 *
 	 * Called when someone calls isset on an unknown variable
+	 *
 	 * @name __isset
 	 * @access public
-	 * @param string $in_name			Name of variable
+	 * @param string $name			Name of variable
 	 * @return bool
 	 * @see isset
 	 */
-	public function __isset(/*string*/ $in_name)
+	public function __isset(/*string*/ $name)
 	{
-		return isset($this->_aValues[$in_name]);
+		return isset($this->_aValues[$name]);
 	}
 
 	/**
 	 * __unset
+	 *
 	 * Called when someone tries to unset an unknown variable
+	 *
 	 * @name __unset
 	 * @access public
-	 * @param string $in_name			Name of variable
+	 * @param string $name			Name of variable
 	 * @return void
 	 * @see unset
 	 */
-	public function __unset(/*string*/ $in_name)
+	public function __unset(/*string*/ $name)
 	{
-		if(isset($this->_aValues[$in_name]))
+		if(isset($this->_aValues[$name]))
 		{
-			unset($this->_aValues[$in_name]);
+			unset($this->_aValues[$name]);
 		}
 	}
 

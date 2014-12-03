@@ -1,680 +1,321 @@
 <?php
 /**
  * MySQL
- * For connecting to, writing to, and querying from a MySQL server/database.
- * Child of SQL class.
  *
- * @author chris nasr
- * @copyright fuel for the fire
- * @package sql
- * @version 0.1
- * @created 2012-06-06
+ * @author Chris Nasr
+ * @copyright FUEL for the FIRE
+ * @created 2014-12-02
  */
 
 /**
- * Include required classes
+ * MySQL Class
+ *
+ * Handles all connections and queries to MySQL databases. Uses configuration
+ * values in 'mysql'
+ *
+ * @name _MySQL
  */
-$gsPath	= dirname(__FILE__);
-require_once $gsPath . '/Arrays.php';
-require_once $gsPath . '/SQL.php';
-
-/**
- * MySQL class
- * @name MySQL
- * @package core
- * @subpackage sql
- */
-class MySQL extends SQL
+class _MySQL
 {
-	/**
-	 * Connection variables
-	 * @var array
-	 * @access private
+	/**#@+
+	 * Select constants
+	 * @var uint
 	 */
-	private $aConVars;
+	const SELECT_ALL		= 0;
+	const SELECT_ROW		= 1;
+	const SELECT_COLUMN		= 2;
+	const SELECT_CELL		= 3;
+	const SELECT_HASH		= 4;
+	CONST SELECT_HASHROWS	= 5;
+	/**#@-*/
 
 	/**
-	 * Conenction to MySQL
-	 * @var resource
+	 * Connections
+	 *
+	 * Holds the mysqli instances for different servers
+	 *
+	 * @var mysqli[]
 	 * @access private
 	 */
-	private $rCon;
-
-	/**
-	 * The current charset of the connection
-	 * @var string
-	 * @access private
-	 */
-	private $sCurrCharset;
+	private static $aCons	= array();
 
 	/**
 	 * Constructor
-	 * Initializes the instance of the object
-	 * @name MySQL
-	 * @access public
-	 * @return MySQL
+	 *
+	 * Private so this class can never be instantiated
+	 *
+	 * @name _MySQL
+	 * @access private
+	 * @return _MySQL
 	 */
-	public function __construct()
+	private function __constructor() {}
+
+	/**
+	 * Clear Connection
+	 *
+	 * Resets the connection variable so we try to connect again
+	 *
+	 * @name clearConnection
+	 * @access private
+	 * @param string $type				The type of connection
+	 * @return void
+	 */
+	private static function clearConnection(/*string*/ $type)
 	{
-		$this->aConVars		= array();
-		$this->rCon			= null;
-		$this->sCurrCharset	= '';
-		// @todo update to mysqli
+		// If the variable exists
+		if(isset(self::$aCons[$type]))
+		{
+			// Close it and unset it
+			self::$aCons[$type]->close();
+			unset(self::$aCons[$type]);
+		}
 	}
 
 	/**
-	 * Connect
-	 * Attempts to connect to the DB
-	 * @name connect
-	 * @access private
-	 * @throws SQLConnectionException
-	 * @return bool
+	 * Escape
+	 *
+	 * Escapes a string so it's ready to be put in an SQL statement
+	 *
+	 * @name escape
+	 * @access public
+	 * @static
+	 * @param string $text				The text to escape
+	 * @param string $type				Type of connection to use to escape the string
+	 * @return string
 	 */
-	private function connect(/*uint*/ $in_tries = 0)
+	public static function escape(/*string*/ $text, /*string*/ $type = 'write')
 	{
-		// If we're already connected
-		if(is_resource($this->rCon))
-		{
-			// Attempt to disconnect first
-			mysql_close($this->rCon);
-		}
+		// Get the write server connection
+		$oCon	= self::fetchConnection($type);
 
-		// Connect to the server and store the connection
-		$this->rCon	= mysql_connect(
-			$this->aConVars['host'],
-			$this->aConVars['user'],
-			$this->aConVars['password']
-		);
-
-		// Check if the connection is valid or else throw an exception
-		if($this->rCon === false)
-		{
-			// Clear the connection resource
-			$this->rCon	= null;
-
-			// If we haven't run out of attempts
-			if($in_tries < $this->aConVars['retries'])
-			{
-				// Sleep for 100 millisecond (100,000 microsecond)
-				usleep(100000);
-
-				// Try again
-				return $this->connect(++$in_tries);
-			}
-			// Else, give up, throw exception
-			else
-			{
-				throw new SQLConnectionException("Can not establish connection to {$this->aConVars['user']}@{$this->aConVars['host']}.\n");
-			}
-		}
-
-		// Connect to the DB
-		$rRes	= mysql_select_db($this->aConVars['db'], $this->rCon);
-
-		// Check selecting the DB didn't fail
-		if($rRes === false)
-		{
-			// If we haven't run out of attempts
-			if($in_tries < $this->aConVars['retries'])
-			{
-				// Clear the connection resource
-				$this->rCon	= null;
-
-				// Sleep for 100 millisecond (100,000 microsecond)
-				usleep(100000);
-
-				// Try again
-				return $this->connect(++$in_tries);
-			}
-			// Else, give up, throw exception
-			else
-			{
-				$iCode		= mysql_errno($this->rCon);
-				$sMsg		= mysql_error($this->rCon);
-				$this->rCon	= null;
-				throw new SQLConnectionException(self::formatError($iCode, $sMsg, ''), $iCode);
-			}
-		}
-
-		// If a charset is set, change it now
-		if(isset($this->aConVars['charset']))
-		{
-			mysql_set_charset($this->aConVars['charset'], $this->rCon);
-			$this->sCurrCharset	= $this->aConVars['charset'];
-		}
-		else
-		{
-			$this->sCurrCharset	= '';
-		}
+		// And escpae the string and return it
+		return $oCon->real_escape_string($text);
 	}
 
 	/**
 	 * Exec
-	 * Execute one or multiple SQL statements on the server and return the affected rows
-	 * <pre>Optional arguments:
-	 * charset 'string'        => The charset to use when transfering and retrieving data
-	 * select 'string'         => A SELECT statement to run and return the results of instead of affected rows
-	 * transaction 'boolean'   => Set to false to stop automatically opening transactions if multiple statements are sent
-	 * </pre>
+	 *
+	 * Execute a particular SQL statement and return the number of affected rows
+	 * INSERT, UPDATE, ALTER, etc
+	 *
 	 * @name exec
 	 * @access public
-	 * @throws SQLException
-	 * @throws SQLConnectionException
-	 * @throws SQLDuplicateKeyException
-	 * @param array|string $in_sql		Single or multiple SQL statements to run
-	 * @param array $in_opts			Optional arguments
-	 * @return mixed					Affected rows or an array if 'select' optional argument is set. If select is set, you can still get the affected rows via ['affected_rows']
+	 * @static
+	 * @throws _MySQL_Exception
+	 * @param string $sql				SQL statement to run
+	 * @param string $select			Alternate SQL statement to run and return
+	 * @return uint
 	 */
-	public function exec(/*array|string*/ $in_sql, array $in_opts = array())
+	public static function exec(/*string*/ $sql, /*string*/ $select = null)
 	{
-		// Check optional arguments
-		Arrays::checkOptions($in_opts, array(
-			'charset'		=> false,
-			'retry'			=> 0,
-			'select'		=> false,
-			'transaction'	=> true
-		));
+		// Get the write server connection
+		$oCon	= self::fetchConnection('write');
 
-		// If we aren't connected
-		if(is_null($this->rCon))
-		{
-			// Connect
-			$this->connect();
-		}
-
-		// Init variables
-		$aAffectedRows	= array();
-
-		// If we haven't already done the setup
-		if($in_opts['retry'] == 0)
-		{
-			// Check if the SQL sent was an array of statements
-			if(is_array($in_sql))
-			{
-				$iCount	= count($in_sql);
-
-				// If the count is more than 1
-				if($iCount > 1 && $in_opts['transaction'])
-				{
-					// Shift the array by two
-					for($i = $iCount + 1; $i > 1; --$i) $in_sql[$i]	= $in_sql[$i - 2];
-
-					// Start transaction statements
-					$in_sql[0]	= 'SET autocommit=0';
-					$in_sql[1]	= 'START TRANSACTION';
-
-					// End transaction statements
-					$in_sql[]	= 'COMMIT';
-					$in_sql[]	= 'SET autocommit=1';
-
-					// Increase count
-					$iCount		+= 4;
-				}
-				else if($iCount == 0)
-				{
-					trigger_error("Empty SQL array passed to " . __METHOD__, E_USER_NOTICE);
-					return null;
-				}
-			}
-			// If not, make it an array of one to simplify the code
-			else
-			{
-				$in_sql	= array($in_sql);
-				$iCount	= 1;
+		// If the query fails, return false
+		if(!$oCon->real_query($sql)) {
+			// If we lost the MySQL connection
+			if($oCon->errno == 2006) {
+				// Clear it and rerun the query after pausing for a second
+				sleep(1);
+				self::clearConnection('write');
+				return self::exec($sql, $select);
+			} else {
+				throw new _MySQL_Exception(__METHOD__ . ' (' . $oCon->errno . '): ' . $oCon->error . "\n{$sql}", $oCon->errno);
 			}
 		}
 
-		// Set charset if sent
-		if($in_opts['charset'])
-			$this->setCharset($in_opts['charset']);
+		// Check if a select statement was passed
+		if(!is_null($select))	return self::select($select, self::SELECT_CELL);
 
-		// Go through each statement
-		for($i = 0; $i < $iCount; ++$i)
-		{
-			// Debug info
-			Debug::add('sql', $in_sql[$i]);
-
-			// Excute the statement
-			$bQuery	= mysql_query($in_sql[$i], $this->rCon);
-
-			// If the query failed
-			if($bQuery === false)
-			{
-				$iErrno	= mysql_errno($this->rCon);	// MySQL error number
-				$sError	= mysql_error($this->rCon);	// MySQL error message
-
-				// Check for specific error codes and that we haven't reached the max tries
-				if(($iErrno == 2006 || $iErrno == 2013) && // MySQL server has gone away || Lost connection to MySQL server during query
-					$in_opts['retry'] < $this->aConVars['retries'])
-				{
-					++$in_opts['retry'];					// Increment retry count
-					usleep(100000);							// Sleep for 100 milliseconds (100,000 microseconds)
-					$this->rCon	= null;						// Reset the resource so we connect again
-					return $this->exec($in_sql, $in_opts);	// Start the whole process over
-				}
-				else
-				{
-					// If we've tried multiple times, add the info to the error string
-					if($in_opts['retry'])	$sError	= "!!! Failed query after {$in_opts['retry']} tries. !!!  {$sError}";
-
-					// Throw appropriate Exception
-					throw self::prepareException($iErrno, $sError, $in_sql[$i]);
-				}
-			}
-
-			// Only get affected rows for passed queries, ignore transaction calls
-			if($iCount == 1					||	// If there's only one statement
-				!$in_opts['transaction']	||	// Or we didn't add transaction statements
-				($i > 1 && $i < $iCount - 2))	// Or we're on a valid statement
-			{
-				$aAffectedRows[]	= mysql_affected_rows($rCon);
-			}
-		}
-
-		// If we need a final select statement to get MySQL variables and such,
-		//	run it now and retrieve the values
-		if($in_opts['select'])
-		{
-			$mRows	= $this->select($in_opts['select']);
-
-			// Add the affected rows if the value is an array
-			if(is_array($mRows))
-			{
-				$mRows['affected_rows']	= (count($aAffectedRows) == 1) ?
-											$aAffectedRows[0] :
-											$aAffectedRows;
-			}
-
-			return $mRows;
-		}
-
-		// Return the number of affected rows
-		return	(count($aAffectedRows) == 1) ?
-					$aAffectedRows[0] :
-					$aAffectedRows;
+		// If there was no select, return affected rows
+		return $oCon->affected_rows;
 	}
 
 	/**
-	 * Format an error string
-	 * @name formatError
+	 * Fetch Connection
+	 *
+	 * Returns a connection to the given server, if there isn't one, it creates
+	 * the instance and connects before returning
+	 *
+	 * @name fetchConnection
 	 * @access private
 	 * @static
-	 * @param int $in_code				Error code
-	 * @param string $in_message		Error message
-	 * @param string $in_sql			The SQL that caused the error
-	 * @return string
+	 * @throws _MySQL_Exception
+	 * @param string $type				The type of connection
+	 * @return mysqli
 	 */
-	public static function formatError($in_code, $in_message, $in_sql = '')
+	private static function fetchConnection(/*string*/ $type, /*uint*/ $count = 0)
 	{
-		// If there are multiple statements, turn them into one long string
-		if(is_array($in_sql))	$in_sql	= implode("\n\n", $in_sql);
-
-		// If we're in CLI mode, send in plain text
-		if(Framework::isCLI())
-		{
-			if(!empty($in_sql))
-			{
-				$sTitle	= 'MySQL Query Error';
-				$sSQL	= "SQL:     {$in_sql}\n";
-			}
-			else
-			{
-				$sTitle	= 'MySQL Error';
-				$sSQL	= '';
-			}
-
-			$sRet	= 	"{$sTitle}\n" .
-						"Code:    {$in_code}\n" .
-						"Message: {$in_message}\n" .
-						"{$sSQL}";
-		}
-		// Else format using HTML
-		else
-		{
-			if(!empty($in_sql))
-			{
-				$sSQL	= preg_replace('/\b(' . self::RESERVED_WORDS . ')\b/i', '<b>\1</b>', $in_sql);
-				$sTitle	= 'MySQL Query Error';
-				$sSQL	= "  <dt>sql:</dt>\n" .
-							"  <dd><pre>{$sSQL}</pre></dd>\n";
-			}
-			else
-			{
-				$sTitle	= 'MySQL Error';
-				$sSQL	= '';
-			}
-
-			$sRet	= "{$sTitle}:<br />\n"	.
-						"<dl class=\"MySQL_Error\">\n" .
-						"  <dt>errno:</dt>\n" .
-						"  <dd>{$in_code}</dd>\n" .
-						"  <dt>error:</dt>\n" .
-						"  <dd>{$in_message}</dd>\n" .
-						"{$sSQL}" .
-						"</dl>";
-
+		// If we already have the connection
+		if(isset(self::$aCons[$type])) {
+			// Return it
+			return self::$aCons[$type];
 		}
 
-		return $sRet;
-	}
+		// Store the type in the conf
+		$aConf	= $type;
 
-	/**
-	 * Initialize
-	 * Sets up the MySQL class, should be called when the application starts
-	 * @name initialize
-	 * @access public
-	 * @static
-	 * @param array $in_con_vars		The connection variables
-	 * @return void
-	 */
-	public static function initialize(array $in_con_vars)
-	{
-		// Check config options
-		Arrays::checkOptions($in_con_vars, array(
-			'host'		=> 'localhost',
-			'user'		=> '',
-			'password'	=> '',
-			'db'		=> 'mysql',
-			'retries'	=> 5,
-			'charset'	=> 'utf8'
-		));
+		// While the conf is a string (which will always be true the first time)
+		while(is_string($aConf))
+		{
+			// Get the config info
+			$aConf	= _Config::get(array('mysql', $aConf), array(
+				'host'		=> 'localhost',
+				'user'		=> 'root',
+				'passwd'	=> '',
+				'dbname'	=> 'db',
+				'port'		=> '3306',
+				'charset'	=> 'utf8'
+			));
+		}
 
-		// Store the config
-		$this->aConVars	= $in_con_vars;
+		// Create a new instance of mysqli
+		$oMySQLI	= new mysqli(
+			$aConf['host'],
+			$aConf['user'],
+			$aConf['passwd'],
+			$aConf['dbname'],
+			$aConf['port']
+		);
+
+		// Check the connection was ok
+		if($oMySQLI->connect_errno) {
+			if(++$count == 5) {
+				throw new _MySQL_Exception('Failed to connect to MySQL server: (' . $oMySQLI->connect_errno . ') ' . $oMySQLI->connect_error, $oMySQLI->connect_errno);
+			} else {
+				sleep(1);
+				return self::fetchConnection($type, $count);
+			}
+		}
+
+		// Change the charset
+		if(!$oMySQLI->set_charset($aConf['charset'])) {
+			throw new _MySQL_Exception('Failed to change charset: (' . $oMySQLI->errno . ') ' . $oMySQLI->error);
+		}
+
+		// Return the instance
+		return (self::$aCons[$type] = $oMySQLI);
 	}
 
 	/**
 	 * Insert
-	 * Execute an INSERT statement and return the new ID if available
-	 * <pre>Optional arguments:
-	 * charset 'string'        => The charset to use when transfering and retrieving data
-	 * </pre>
+	 *
+	 * Insert a row into a table and return the new ID
+	 *
 	 * @name insert
 	 * @access public
-	 * @throws SQLException
-	 * @throws SQLConnectionException
-	 * @throws SQLDuplicateKeyException
-	 * @param string $in_sql			The INSERT statement
-	 * @param array $in_opts			Options arguments
-	 * @return uint						Last INSERT ID
+	 * @static
+	 * @throws _MySQL_Exception
+	 * @param string $sql				SQL statement to run
+	 * @return int
 	 */
-	public function insert(/*string*/ $in_sql, array $in_opts = array())
+	public static function insert(/*string*/ $sql)
 	{
-		// Make sure no one tries to pass an array for sql
-		if(!is_string($in_sql))	throw new FWInvalidType(__METHOD__, 'string', $in_sql);
+		// Get the write server connection
+		$oCon	= self::fetchConnection('write');
 
-		// Check optional arguments
-		Arrays::checkOptions($in_opts, array(
-			'charset'	=> false,
-			'retry'		=> 0
-		));
-
-		// If we aren't connected
-		if(is_null($this->rCon))
-		{
-			// Connect
-			$this->connect();
-		}
-
-		// Set charset if sent
-		if($in_opts['charset'])
-			$this->setCharset($in_opts['charset']);
-
-		// Debug info
-		Debug::Add('sql', $in_sql);
-
-		// Excute the statement
-		$bQuery	= mysql_query($in_sql, $this->rCon);
-
-		// If the query failed
-		if($bQuery === false)
-		{
-			$iErrno	= mysql_errno($this->rCon);	// MySQL error number
-			$sError	= mysql_error($this->rCon);	// MySQL error message
-
-			// Check for specific error codes and that we haven't reached the max tries
-			if(($iErrno == 2006 || $iErrno == 2013) && // MySQL server has gone away || Lost connection to MySQL server during query
-				$in_opts['retry'] < $this->aConVars['retries'])
-			{
-				++$in_opts['retry'];						// Increment retry count
-				usleep(100000);								// Sleep for 100 milliseconds (100,000 microseconds)
-				$this->rCon	= null;							// Clear the connection resource
-				return self::insert($in_sql, $in_opts);		// Start the whole process over
-			}
-			else
-			{
-				// If we've tried multiple times, add the info to the error string
-				if($in_opts['retry'])	$sError	= "!!! Failed query after {$in_opts['retry']} tries. !!!  {$sError}";
-
-				// Throw appropriate Exception
-				throw self::prepareException($iErrno, $sError, $in_sql);
+		// If the query fails, return false
+		if(!$oCon->real_query($sql)) {
+			// If we lost the MySQL connection
+			if($oCon->errno == 2006) {
+				// Clear it and rerun the query after pausing for a second
+				sleep(1);
+				self::clearConnection('write');
+				return self::insert($sql);
+			} else {
+				throw new _MySQL_Exception(__METHOD__ . ' (' . $oCon->errno . '): ' . $oCon->error . "\n{$sql}", $oCon->errno);
 			}
 		}
 
 		// Return the last inserted ID
-		return mysql_insert_id($this->rCon);
-	}
-
-	/**
-	 * Prepare Exception
-	 * Gets MySQL error info and returns the appropriate Exception
-	 * @name prepareException
-	 * @access private
-	 * @static
-	 * @param int $in_code				Error code (errno)
-	 * @param string $in_msg			Error message (error)
-	 * @param string $in_sql			The SQL that caused the error
-	 * @return SQLException
-	 */
-	private static function prepareException(/*int*/ $in_code, /*string*/ $in_msg, /*string*/ $in_sql)
-	{
-		// If the error is a duplicate key violation
-		if(1062 == $in_code)
-		{
-			// Pull out the name and value of the key violation
-			if(preg_match('/Duplicate entry \'(.*)\' for key \'(.*)\'/', $in_msg, $aM))
-			{
-				$sKValue	= $aM[1];
-				$sKName		= $aM[2];
-			}
-			else
-			{
-				$sKValue	= 'unknown';
-				$sKName		= 'unknown';
-			}
-
-			// Create and return a duplicate key exception
-			return new SQLDuplicateKeyException(
-				self::formatError($in_code, $in_msg, $in_sql),
-				$in_code,
-				$sKValue,
-				$sKName
-			);
-		}
-		// Else create and return a regular SQL exception
-		else
-		{
-			return new SQLException(self::formatError($in_code, $in_msg, $in_sql), $in_code);
-		}
+		return $oCon->insert_id;
 	}
 
 	/**
 	 * Select
-	 * Executes a SELECT statement and returns the results based on the select type
-	 * <pre>Optional arguments
-	 * charset 'string'        => The charset to use when transfering and retrieving data
-	 * type 'uint'             => The type of data to return, see SQL::SELECT_*
-	 * </pre>
+	 *
+	 * Select rows, columns, maps and single cells
+	 *
 	 * @name select
 	 * @access public
-	 * @throws SQLException
-	 * @throws SQLConnectionException
-	 * @param string $in_sql			The SELECT statement
-	 * @param uint $in_type				The type of data to return
+	 * @static
+	 * @throws _MySQL_Exception
+	 * @param string $sql				SQL statement to run
+	 * @param uint $return				Return type
 	 * @return mixed
 	 */
-	public function select(/*string*/ $in_sql, array $in_opts = array())
+	public static function select(/*string*/ $sql, /*uint*/ $return = self::SELECT_ALL)
 	{
-		// Make sure no one tries to pass an array for sql
-		if(!is_string($in_sql))	throw new FWInvalidType(__METHOD__, 'string', $in_sql);
+		// Get the read server connection
+		$oCon	= self::fetchConnection('read');
 
-		// Check optional arguments
-		Arrays::checkOptions($in_opts, array(
-			'charset'	=> false,
-			'retry'		=> 0,
-			'type'		=> SQL::SELECT_ALL
-		));
-
-		// If we aren't connected
-		if(is_null($this->rCon))
-		{
-			// Connect
-			$this->connect();
-		}
-
-		// Set charset if sent
-		if($in_opts['charset'])
-			$this->setCharset($in_opts['charset']);
-
-		// Debug info
-		Debug::Add('sql', $in_sql);
-
-		// Call query
-		$rSet	= mysql_query($in_sql, $this->rCon);
-
-		// If the query failed
-		if($rSet === false)
-		{
-			$iErrno	= mysql_errno($this->rCon);	// MySQL error number
-			$sError	= mysql_error($this->rCon);	// MySQL error message
-
-			// Check for specific error codes and that we haven't reached the max tries
-			if(($iErrno == 2006 || $iErrno == 2013) && // MySQL server has gone away || Lost connection to MySQL server during query
-				$in_opts['retry'] < $this->aConVars['retries'])
-			{
-				++$in_opts['retry'];						// Increment retry count
-				usleep(100000);								// Sleep for 100 milliseconds (100,000 microseconds)
-				$this->rCon	= null;							// Clear the connection resource
-				return self::select($in_sql, $in_opts);		// Start the whole process over
-			}
-			else
-			{
-				// Throw an exception
-				if($in_opts['retry'])	$sError	= "!!! Failed query after {$in_opts['retry']} tries. !!!  {$sError}";
-				throw new MySQLException(self::formatError($iErrno, $sError, $in_sql), $iErrno);
+		// If the query fails, return false
+		if(!$oCon->real_query($sql)) {
+			// If we lost the MySQL connection
+			if($oCon->errno == 2006) {
+				// Clear it and rerun the query after pausing for a second
+				sleep(1);
+				self::clearConnection('read');
+				return self::select($sql, $return);
+			} else {
+				throw new _MySQL_Exception(__METHOD__ . ' (' . $oCon->errno . '): ' . $oCon->error . "\n{$sql}", $oCon->errno);
 			}
 		}
+
+		// Check if there are any rows
+		$oResult	= $oCon->use_result();
+		if(!$oResult)	return null;
 
 		// Figure out what output to return
-		switch($in_opts['type'])
+		switch($return)
 		{
-			case SQL::SELECT_ALL:		// Get all the data in all the rows
+			case self::SELECT_ALL:		// Get all the data in all the rows
 				$aData	= array();
-				while($row = mysql_fetch_assoc($rSet))	$aData[]	= $row;
+				while($aRow = $oResult->fetch_assoc())	$aData[]	= $aRow;
 				break;
 
-			case SQL::SELECT_ROW:		// Only get the first row
-				if(mysql_num_rows($rSet))	$aData	= mysql_fetch_assoc($rSet);
-				else						$aData	= array();
+			case self::SELECT_ROW:		// Only get the first row
+				$aData	= null;
+				if($aRow = $oResult->fetch_assoc())		$aData		= $aRow;
 				break;
 
-			case SQL::SELECT_COLUMN:	// Only get the first column
+			case self::SELECT_COLUMN:	// Only get the first column
 				$aData	= array();
-				while($row = mysql_fetch_row($rSet))	$aData[]	= $row[0];
+				while($aRow = $oResult->fetch_row())	$aData[]	= $aRow[0];
 				break;
 
-			case SQL::SELECT_CELL:		// Only get the first field in the first row
-				if(mysql_num_rows($rSet))	$aData	= mysql_result($rSet, 0, 0);
-				else						$aData 	= null;
+			case self::SELECT_CELL:		// Only get the first field in the first row
+				$aData	= null;
+				if($aRow = $oResult->fetch_row())		$aData		= $aRow[0];
 				break;
 
-			case SQL::SELECT_MAP:		// Make the first column the key, the second the value
+			case self::SELECT_HASH:		// Make the first column the key, the second the value
 				$aData	= array();
-				while($row = mysql_fetch_row($rSet))	$aData[$row[0]]	= $row[1];
+				while($aRow = $oResult->fetch_row())	$aData[$aRow[0]]	= $aRow[1];
+				break;
+
+			case self::SELECT_HASHROWS: // Make the first column the key, the second the row
+				$aData	= array();
+				// Fetch the first field
+				$oField = $oResult->fetch_field();
+				while($aRow = $oResult->fetch_assoc())	  $aData[$aRow[$oField->name]]	= $aRow;
 				break;
 		}
 
-		// Free result
-		mysql_free_result($rSet);
+		// Free the memory
+		$oResult->free();
 
-		// Return the data
+		// Return the result
 		return $aData;
-	}
-
-	/**
-	 * Set Charset
-	 * Stores the charset to use for the instance
-	 * @name setCharset
-	 * @access public
-	 * @param string $in_charset		The name of the charset
-	 * @return void
-	 */
-	public function setCharset(/*string*/ $in_charset)
-	{
-		// If the charset is different than the current
-		if($in_charset != $this->sCurrCharset)
-		{
-			// Try to change it
-			if(!mysql_set_charset($in_opts['charset']))
-			{
-				// If it failed, warn the user
-				trigger_error("Failed to change charset to {$in_charset}.", E_USER_WARNING);
-			}
-			else
-			{
-				// Save the new charset
-				$this->sCurrCharset	= $in_charset;
-			}
-		}
-	}
-
-	/**
-	 * Wait for Sync
-	 * Returns only when this server is in sync (or close enough) to its master. Should never be used in HTTP instances as it can wait for long periods of time
-	 * @name waitForSync
-	 * @access public
-	 * @throws SQLException
-	 * @throws SQLConnectionException
-	 * @param uint $in_minimun_sbm		The minimum time difference between this server and the master
-	 * @return void
-	 */
-	public function waitForSync(/*uint*/ $in_minimun_sbm = 0)
-	{
-		for($i = 1; true; ++$i)
-		{
-			// Get the slave status
-			$aRow	= $this->select('SHOW SLAVE STATUS', SQL::SELECT_ROW);
-
-			// Check for a seconds_behind_master field
-			if(is_null($aRow) ||   (!isset($aRow['seconds_behind_master']) &&
-									!isset($aRow['Seconds_Behind_Master'])))
-			{
-				throw new SQLException("Failed to get seconds_behind_master.");
-			}
-
-			// Store seconds behind master
-			$iSBM	= intval(isset($aRow['seconds_behind_master']) ?
-								$aRow['seconds_behind_master'] :
-								$aRow['Seconds_Behind_Master']);
-
-			// If the slave is synced, exit the loop
-			if($iSBM <= $in_minimun_sbm)
-			{
-				break;
-			}
-			// Otherwise sleep for a time determined
-			//	by the number of iterations
-			else
-			{
-				sleep($i);
-			}
-
-			if($i >= 20)
-			{
-				throw new SQLException("Slave won't sync. {$iSBM} Seconds Behind Master.");
-			}
-		}
 	}
 }
 
-?>
+/**
+ * MySQL Exception class
+ *
+ * Is used for any exceptions thrown from inside _MySQL
+ *
+ * @name _MySQL_Exception
+ * @extends Exception
+ */
+class _MySQL_Exception extends Exception {}

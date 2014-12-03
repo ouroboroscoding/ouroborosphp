@@ -1,298 +1,186 @@
 <?php
 /**
- * Configuration class, used to loading and generating configuration files
+ * Config
  *
- * @author chris nasr
- * @copyright fuel for the fire
- * @package core
- * @version 0.1
- * @created 2012-05-29
+ * @author Chris Nasr
+ * @copyright FUEL for the FIRE
+ * @created 2014-12-02
  */
 
 /**
  * Config class
- * @name Config
- * @package core
+ *
+ * Easy storage for configuration settings
+ *
+ * @name _Config
  */
-class Config
+class _Config
 {
 	/**
-	 * Values array
+	 * Values
+	 *
+	 * All the values in the configuration
+	 *
 	 * @var array
 	 * @access private
 	 */
-	private /*array*/ $aValues;
+	private static $aValues = array();
 
 	/**
-	 * Constructor
-	 * Initialises the configuration instance
-	 * @name Config
+	 * Append
+	 *
+	 * Adds new values on top of the existing ones. Duplicates will be
+	 * overwritten.
+	 *
+	 * @name append
 	 * @access public
-	 * @return Config
+	 * @static
+	 * @param array $values				The values to add to the config
+	 * @return void
 	 */
-	public function __construct()
+	public static function append(array $values)
 	{
-		$this->aValues	= array();
+		self::appendWorker($values, self::$aValues);
 	}
 
 	/**
-	 * __get
-	 * PHP overload method for getting unknown variables
-	 * @name __get
-	 * @access public
-	 * @param string $name				The name of the variable request
-	 * @return mixed
+	 * Append Worker
+	 *
+	 * The recursive method that does the real work of append
+	 *
+	 * @name appendWorker
+	 * @access private
+	 * @static
+	 * @param array $values				The values to add to the existing
+	 * @param array &$existing			The existing part of the array we are overwriting
+	 * @return void
 	 */
-	public function __get(/*string*/ $name)
+	private static function appendWorker(array $values, array &$existing)
 	{
-		// If the value doesn't exist
-		if(!isset($this->aValues[$name]))
+		foreach($values as $sName => $mValue)
 		{
-			return null;
+			// If it's an array and it already exists
+			if(is_array($mValue) && isset($existing[$sName]) && is_array($existing[$sName]))
+			{
+				// Recurse
+				self::appendWorker($mValue, $existing[$sName]);
+			}
+			else
+			{
+				// Add/overwrite it
+				$existing[$sName]	= $mValue;
+			}
+		}
+	}
+
+	/**
+	 * Init
+	 *
+	 * Overwrites all values with the array sent
+	 *
+	 * @name init
+	 * @access public
+	 * @static
+	 * @param array $values				The values to store
+	 * @return void
+	 */
+	public static function init(array $values)
+	{
+		// Overwrite all values
+		self::$aValues	= $values;
+	}
+
+	/**
+	 * Set
+	 *
+	 * Overwrites or creates the key by setting it to the value passed
+	 *
+	 * @name set
+	 * @access public
+	 * @param string|array $key			The key to write or overwrite
+	 * @param mixed $value				The value to set the key to
+	 * @return void
+	 */
+	public static function set(/*string|array*/ $key, /*mixed*/ $value)
+	{
+		// If the $key is an array
+		if(is_array($key)) {
+			$iCount = count($key);
+		} else {
+			// It's a string, so check if we need to split it by colon
+			if(strpos($key, ':')) {
+				$key	= explode(':', $key);
+				$iCount = count($key);
+			} else {
+				$key	= array($key);
+				$iCount = 1;
+			}
 		}
 
-		return $this->aValues[$name];
-	}
+		// Set the first level
+		$mData	= &self::$aValues;
 
-	/**
-	 * __isset
-	 * PHP overload method for checking unknown variables
-	 * @name __isset
-	 * @access public
-	 * @param string $in_name			The name of the variable to check
-	 * @return bool
-	 */
-	public function __isset(/*string*/ $name)
-	{
-		return isset($this->aValue[$name]);
-	}
+		// Get the setting
+		for($i = 0; $i < $iCount; ++$i)
+		{
+			// If the key doesn't exist
+			if(!isset($mData[$key[$i]])) {
+				$mData[$key[$i]]	= array();
+			}
 
-	/**
-	 * Generate
-	 * Returns a string appropriate for saving as a configuration file
-	 * @name generate
-	 * @access public
-	 * @return string
-	 */
-	public function generate()
-	{
-		return "<?php\nreturn " . var_export($this->aValues, true) . ";\n?>";
+			$mData	= &$mData[$key[$i]];
+
+			// If we're on the last item
+			if($i == ($iCount - 1)) {
+				$mData	= $value;
+			}
+		}
 	}
 
 	/**
 	 * Get
-	 * Returns configuration values, the more arguments you send, the deeper the returned value
+	 *
+	 * Gets a configuration setting and returns it. The more arguments you send,
+	 * the deeper the value. Sending no value will return all settings.
+	 *
 	 * @name get
 	 * @access public
-	 * @param string $name				Name of the configuration value
-	 * @param mixed $default			The value to return if it's not found
+	 * @param string|array $key			The key, separated by colons, or as an array, to the config variable
+	 * @param mixed $default			The default value to return if the variable isn't found
 	 * @return mixed
 	 */
-	public function get(/*string*/ $name = null, /*mixed*/ $default = null)
+	public static function get(/*string|array*/ $key = '', /*mixed*/ $default = null)
 	{
-		// If the name wasn't sent
-		if(is_null($name))
-		{
-			// Return the entire array
-			return $this->aValues;
-		}
-
-		// Split the name by colon
-		$aNames	= explode(':', $name);
-		$iCount	= count($aNames);
-
-		// If the first name doesn't exist, return the default
-		if(!isset($this->aValues[$aNames[0]]))
-		{
-			return $default;
+		// If the $key is an array
+		if(is_array($key)) {
+			$iCount = count($key);
+		} else if(!empty($key)) {
+			// It's a string, so check if we need to split it by colon
+			if(strpos($key, ':')) {
+				$key	= explode(':', $key);
+				$iCount = count($key);
+			} else {
+				$key	= array($key);
+				$iCount = 1;
+			}
+		} else {
+			return self::$aValues;
 		}
 
 		// Set the first level
-		$mData	= $this->aValues[$aNames[0]];
+		$mData	= self::$aValues;
 
-		// Keep going through the names till we reach the end
-		for($i = 1; $i < $iCount; ++$i)
+		// Get the setting
+		for($i = 0; $i < $iCount; ++$i)
 		{
 			// If the data doesn't exist, return null
-			if(!isset($mData[$aNames[$i]]))
-			{
-				return $default;
-			}
+			if(!isset($mData[$key[$i]])) return $default;
 
-			// Set the current level and loop around
-			$mData	= $mData[$aNames[$i]];
+			// Set the current level
+			$mData	= $mData[$key[$i]];
 		}
 
-		// Return the last data we found
+		// Return
 		return $mData;
-	}
-
-	/**
-	 * Load
-	 * Loads a config file into memory
-	 * @name load
-	 * @access public
-	 * @static
-	 * @param string $filename			Full or relative path to the configuration file
-	 * @return bool
-	 */
-	public function load(/*string*/ $filename)
-	{
-		// Check if the file doesn't exists
-		if(!file_exists($filename))
-		{
-			return false;
-		}
-
-		// Include the array the config file returns
-		$this->aValues	= include $filename;
-
-		// If the return value isn't an array the file isn't done properly
-		if(!is_array($this->aValues))
-		{
-			$this->aValues	= array();
-			return false;
-		}
-
-		// Let the caller know we were succesful
-		return true;
-	}
-
-	/**
-	 * Load From XML
-	 * Loads a config file from an XML, converts it to a PHP array, and stores it in memory
-	 * @name loadFromXML
-	 * @access public
-	 * @param string $filename			Full or relative path to the XML file
-	 * @return bool
-	 */
-	public function loadFromXML(/*string*/ $filename)
-	{
-		// Check if the file doesn't exists
-		if(!file_exists($filename))
-		{
-			return false;
-		}
-
-		// If it does, load it into memory
-		$sXML	= file_get_contents($filename);
-
-		// Pass the file to SimpleXML
-		$oXML	= new SimpleXMLElement($sXML);
-		unset($sXML);
-
-		// Convert the SimpleXMLElement to an array and store it
-		$this->aValues	= self::xmlToArray($oXML);
-		unset($oXML);
-
-		// Let the caller know we were successful
-		return true;
-	}
-
-	/**
-	 * Save
-	 * Returns a string suitable for saving the config file
-	 * @name generate
-	 * @access public
-	 * @param string $in_filename		Full or relative path to save the configuration file
-	 * @return bool
-	 */
-	public function save(/*string*/ $filename)
-	{
-		// Try to save the file
-		$mRet	= file_put_contents($filename, $this->generate(), LOCK_EX);
-
-		// If we got false, we failed
-		return ($mRet === false) ? false : true;
-	}
-
-	/**
-	 * xmlToArray
-	 * Recursive function that converts a tree of SimpleXMLElements into a flatter array format more suitable for local storage
-	 * @name xmlToArray
-	 * @access public
-	 * @static
-	 * @param SimpleXMLElement $in_xml	The element to convert
-	 * @return array
-	 */
-	private static function xmlToArray(SimpleXMLElement $xml)
-	{
-		// Init return array
-		$aRet	= array();
-
-		// Go through every child of the element
-		foreach($xml->children(null, true) as $oSimpleXML)
-		{
-			// Get the name
-			$sName	= strtolower($oSimpleXML->getName());
-
-			// Try to get the text
-			$sText	= trim((string)$oSimpleXML);
-
-			// If there was text
-			if(strlen($sText))
-			{
-				// Get all the attributes for the element
-				$aAttrs	= $oSimpleXML->attributes();
-
-				// If there's a type attribute
-				if(isset($aAttrs['type']))
-				{
-					// Store the text based on the type
-					switch($aAttrs['type'])
-					{
-						case 'array':
-							// Check if the delimeter was passed
-							$sDeli	= (isset($aAttrs['delimiter'])) ?
-										$aAttrs['delimiter'] :
-										',';
-
-							// Separate the string into parts
-							$aRet[$sName]	= explode($sDeli, $sText);
-							break;
-
-						case 'decimal':
-						case 'float':
-							$aRet[$sName]	= floatval($sText);
-							break;
-
-						case 'bool':
-						case 'boolean':
-							$sLowText		= mb_strtolower($sText, 'utf8');
-							$aRet[$sName]	= (in_array($sText, array('true', 't', 'yes', 'y', '1'))) ?
-												true : false;
-							break;
-
-						case 'int':
-						case 'integer':
-							$aRet[$sName]	= intval($sText);
-							break;
-
-						default:
-							trigger_error("Invalid modifier user in tag {$sName}: {$aAttrs['type']}", E_USER_WARNING);
-							$aRet[$sName]	= $sText;
-							break;
-					}
-				}
-				else
-				{
-					// Save it under the name of this child
-					$aRet[$sName]	= $sText;
-				}
-			}
-			// If there's children in this child
-			else if($oSimpleXML->count())
-			{
-				// Call xmlToArray again to go deeper into the tree
-				$aRet[$sName]	= self::xmlToArray($oSimpleXML);
-			}
-			// If there's no text and no children, save the key with no value
-			else
-			{
-				$aRet[$sName]	= null;
-			}
-		}
-
-		return $aRet;
 	}
 }

@@ -1,112 +1,92 @@
 <?php
 /**
- * HTTP Class, used for cleaning and reading inputs, for loading controllers and
- * views, everything you need to interact with HTTP requests
- *
- * @author chris nasr
- * @copyright fuel for the fire
- * @package core
- * @version 0.1
- * @created 2012-05-29
- */
-
-/**
- * include required classes
- */
-require_once 'Template.php';
-
-/**
  * HTTP Class
- * @name HTTP
- * @package core
+ *
+ * @author Chris Nasr
+ * @copyright FUEL for the FIRE
+ * @created 2014-12-02
  */
-class HTTP
+
+/**
+ * HTTP class
+ *
+ * Handles anything http related
+ *
+ * @name _HTTP
+ */
+class _HTTP
 {
 	/**
-	 * Constructor
-	 * Does nothing, call initialize to setup the instance
-	 * @name HTTP
+	 * Handle Upload
+	 *
+	 * Verifies and moves an uploaded file
+	 *
+	 * @name handleUpload
 	 * @access public
-	 * @return HTTP
+	 * @static
+	 * @param array $file				The array of the file upload via $_FILES
+	 * @param string $new_location		The place to store the uploaded file
+	 * @param array $allowed_types		The list of allowed mime types, null to allow all types
+	 * @return true|string				Returns an error message if anything goes wrong
 	 */
-	public function __construct() {}
-
-	/**
-	 * Cleanup
-	 * Cleans up after the instance
-	 * @name cleanup
-	 * @access public
-	 * @return void
-	 */
-	public function cleanup()
+	public static function handleUpload(array $file, /*string*/ $new_location, array $allowed_types = array())
 	{
-		// @todo display debugging
+		// If there was an error
+		if($file['error'] != UPLOAD_ERR_OK)
+		{
+			switch($file['error'])
+			{
+				case UPLOAD_ERR_INI_SIZE:	return 'The uploaded file exceeds the upload_max_filesize directive in php.ini.';
+				case UPLOAD_ERR_FORM_SIZE:	return 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.';
+				case UPLOAD_ERR_PARTIAL:	return 'The uploaded file was only partially uploaded.';
+				case UPLOAD_ERR_NO_FILE:	return 'No file was uploaded.';
+				case UPLOAD_ERR_NO_TMP_DIR: return 'Missing a temporary folder.';
+				case UPLOAD_ERR_CANT_WRITE: return 'Failed to write file to disk.';
+				case UPLOAD_ERR_EXTENSION:	return 'A PHP extension stopped the file upload.';
+				default:					return 'An unknown error of ' . $file['error'] . ' was returned.';
+			}
+		}
+
+		// Is the file a valid image type?
+		if(!empty($allowed_types) && !in_array($file['type'], $allowed_types)) {
+			return 'Invalid file format: ' . $file['type'];
+		}
+
+		// Try to move the uploaded file
+		if(!move_uploaded_file($file['tmp_name'], $new_location)) {
+			return 'Unable to move uploaded file.';
+		}
+
+		// A-OK
+		return true;
 	}
 
 	/**
-	 * Initialize
-	 * Sets up the HTTP instance based on the config
-	 * @name initialize
+	 * URL
+	 *
+	 * Returns the full URL to the current page
+	 *
+	 * @name url
 	 * @access public
-	 * @param Config $in_config			Configuration
-	 * @param string $in_name			Name of the instance
-	 * @return bool
+	 * @static
+	 * @param bool $encode				If true the value is returned encoded
+	 * @return string
 	 */
-	public function initialize(Config $in_config, /*string*/ $in_name)
+	public static function url(/*bool*/ $encode = false)
 	{
-		// @todo store config and name
-		// @todo setup debugging
-		// @todo clean inputs
-		// @todo set path
-		// @todo check guimode
-		// @todo check controller
-	}
+		// Check the protocal
+		$sHTTP	= isset($_SERVER['HTTPS']) && !empty($_SERVER['HTTPS']) ?
+					'https' : 'http';
 
-	/**
-	 * Process
-	 * Calls the controller and loads whatever views are necessary
-	 * @name process
-	 * @access public
-	 * @return void
-	 */
-	public function process()
-	{
-		// @todo load view(s)
-		// @todo load controller
-	}
+		// Create the URL
+		$sURL	= "{$sHTTP}://{$_SERVER['SERVER_NAME']}/{$_SERVER['REQUEST_URI']}";
 
-	/**
-	 * Options
-	 *
-	 * controller param => 'c' or 'controller' or 'action', etc
-	 *
-	 *
-	 * guimode param => 'g' or 'guimode' or 'gui', etc
-	 * 			'hvf'	=> header, view, and footer
-	 * 			'v'		=> view only
-	 * 			'hv'	=> header and view
-	 * 			''		=> do nothing
-	 * 		alternately this could be passed in the XML/config for each page
-	 *
-	 *
-	 * header name	=> 'header.tpl'
-	 *
-	 *
-	 * footer name	=> 'footer.tpl'
-	 *
-	 *
-	 * mode	=> 'path_pairs'
-	 * 				'/hello/there/my/friend/' = array('hello' => 'there', 'my' => 'friend')
-	 * 			'path'
-	 * 				'/hello/there/my/friend/' = array('hello', 'there', 'my', 'friend')
-	 * 			'params'
-	 * 				'?hello=there&my=friends' = array('hello' => 'there', 'my' => 'friend')
-	 *
-	 *
-	 * debug activator	=> 'debug', '_debug_', 'frank', 'fuckoff', whatever
-	 *
-	 *
-	 * name => 'Hey hey hey interface'
-	 *
-	 */
+		// If it needs to be encoded
+		if($encode) {
+			$sURL	= urlencode($sURL);
+		}
+
+		// Return the URL
+		return $sURL;
+	}
 }
