@@ -7,15 +7,8 @@
  * @created 2014-12-02
  */
 
-	echo '<pre>';
-	var_dump($_SERVER);
-	var_dump(__FILE__);
-	echo '</pre>';
-
 	// Set the root path of the application as the working directory
 	chdir(realpath(dirname(__FILE__) . '/..'));
-
-	echo getcwd(), "\n";
 
 	// Track errors at shutdown
 	require 'ouroboros/includes/shutdown.inc.php';
