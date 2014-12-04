@@ -116,6 +116,177 @@ abstract class _Table
 	}
 
 	/**
+	 * Find
+	 *
+	 * Searches for a record(s) by its primary key(s)
+	 *
+	 * @name find
+	 * @access public
+	 * @static
+	 * @param mixed|mixed[] $key		A primary key or a list of primary keys
+	 * @param bool $raw					If true arrays of records will be returned instead of _Table instances
+	 * @return Table|Table[]|array|array[]
+	 */
+	public static function find(/*mixed|mixed[]*/ $key, /*bool*/ $raw = false)
+	{
+		// Check for multiple records versus a single record
+		if(is_array($key)) {
+			$bSingle	= false;
+		} else {
+			$bSingle	= true;
+			$key		= array($key);
+		}
+
+		// Look up the table details
+		//	First create an instance of the calling class
+		$sClass	= get_called_class();
+		$oClass	= new $sClass(array());
+
+		/** Get the structure and details
+		 * @var _TableStructure */
+		$oStruct	= $oClass->getStructure();
+		$sName		= $oStruct->getName();
+		$aFields	= $oStruct->getFields();
+		$sPrimary	= $oStruct->getPrimary();
+
+		// Build the list of SELECT fields
+		$sSelect	= '`' . implode('`, `', array_keys($aFields)) . '`';
+
+		// Build the list of keys
+		$aKeys	= array();
+		foreach($key as $mKey) {
+			$aKeys[]	= $oStruct->escapeField($sPrimary, $mKey);
+		}
+		$sKeys	= implode(',', $aKeys);
+
+		// Build the query
+		$sSQL	= "SELECT {$sSelect} FROM `{$sName}`" .
+					" WHERE `{$sPrimary}` IN ({$sKeys})";
+
+		// Get the records
+		$aRecords	= _MySQL::select($sSQL, _MySQL::SELECT_ALL);
+
+		// If only raw records were requested
+		if($raw) {
+			return $bSingle ? $aRecords[0] : $aRecords;
+		}
+
+		// Else create the instances
+		$aInstances	= array();
+		foreach($aRecords as $aRecord) {
+			$aInstances[$aRecord[$sPrimary]]	= new $sClass($aRecord);
+		}
+
+		// Return the instance or instances
+		return $bSingle ? array_pop($aInstances) : $aInstances;
+	}
+
+	/**
+	 * Find By Field
+	 *
+	 * Looks up records by a specific field
+	 *
+	 * @name findByField
+	 * @access public
+	 * @static
+	 * @param string $field				The field to search
+	 * @param mixed|mixed[] $value		The value or values to search by
+	 * @param bool $raw					If true arrays of records will be returned instead of _Table instances
+	 * @return array
+	 */
+	public static function findByField(/*string*/ $field, /*mixed|mixed[]*/ $value, /*bool*/ $raw = false)
+	{
+		// Check for multiple values versus a single value
+		if(is_array($value))
+		{
+			// If the list if empty
+			if(empty($value)) {
+				return null;
+			}
+
+			$bSingle	= false;
+		}
+		else
+		{
+			$bSingle	= true;
+			$value		= array($value);
+		}
+
+		// Look up the table details
+		//	First create an instance of the calling class
+		$sClass	= get_called_class();
+		$oClass	= new $sClass(array());
+
+		/** Get the structure and details
+		 * @var _TableStructure */
+		$oStruct	= $oClass->getStructure();
+		$sName		= $oStruct->getName();
+		$aFields	= $oStruct->getFields();
+		$sPrimary	= $oStruct->getPrimary();
+
+		// If the field is not valid
+		if(!isset($aFields[$field])) {
+			trigger_error(__METHOD__ . ' Error: Invalid $field argument passed.', E_USER_ERROR);
+		}
+
+		// Build the list of SELECT fields
+		$sSelect	= '`' . implode('`, `', array_keys($aFields)) . '`';
+
+		// Build the list of values
+		$aValues	= array();
+		foreach($value as $mValue) {
+			$aValues[]	= $oStruct->escapeField($sPrimary, $mValue);
+		}
+		$sValues	= implode(',', $aValues);
+
+		// Build the query
+		$sSQL	= "SELECT {$sSelect} FROM `{$sName}`" .
+					" WHERE `{$field}` IN ({$sValues})";
+
+		// Get the records
+		$aRecords	= _MySQL::select($sSQL, _MySQL::SELECT_ALL);
+
+		// If only raw records were requested
+		if($raw) {
+			return $bSingle ? $aRecords[0] : $aRecords;
+		}
+
+		// Else create the instances
+		$aInstances	= array();
+		foreach($aRecords as $aRecord)
+		{
+			// If there's a single value
+			if($bSingle)
+			{
+				$aInstances[$aRecord[$sPrimary]]	= new $sClass($aRecord);
+			}
+			// Else if there's multiple values
+			else
+			{
+				// If the field already exists
+				if(isset($aInstances[$aRecord[$field]]))
+				{
+					// If it's not already an array
+					if(!is_array($aInstances[$aRecord[$field]])) {
+						$aInstances[$aRecord[$field]]	= array($aInstances[$aRecord[$field]]);
+					}
+
+					// Append the instance
+					$aInstances[$aRecord[$field]][$aRecord[$sPrimary]]	= new $sClass($aRecord);
+				}
+				// Else just store it under the field
+				else
+				{
+					$aInstances[$aRecord[$field]]	= new $sClass($aRecord);
+				}
+			}
+		}
+
+		// Return the instance or instances
+		return $aInstances;
+	}
+
+	/**
 	 * Get
 	 *
 	 * Returns the value of a field in the record
@@ -157,11 +328,11 @@ abstract class _Table
 	 * that matches the table info for the child
 	 *
 	 * @name getStructure
-	 * @access public
+	 * @access protected
 	 * @abstract
 	 * @return _TableStructure
 	 */
-	abstract public function getStructure();
+	abstract protected function getStructure();
 
 	/**
 	 * Insert
@@ -317,7 +488,7 @@ abstract class _Table
 	 * @access public
 	 * @throws Exception
 	 * @param bool $force				If set, all fields are updated regardless of the changed fields array
-	 * @return void
+	 * @return bool
 	 */
 	public function update(/*bool*/ $force = false)
 	{
@@ -347,19 +518,23 @@ abstract class _Table
 		}
 		$sFields	= implode(', ', $aTemp);
 
-		// If there's fields to update
-		if(!empty($sFields))
-		{
-			// Generate SQL
-			$sSQL	= "UPDATE `{$sName}` SET" .
-						" {$sFields}" .
-						" WHERE `{$sPrimary}` = '{$this->aRecord[$sPrimary]}'";
-
-			// Update the record
-			_MySQL::exec($sSQL);
-
-			// Clear changed fields
-			$this->aChanged = array();
+		// If there's nothing to update
+		if(empty($sFields)) {
+			return false;
 		}
+
+		// Generate SQL
+		$sSQL	= "UPDATE `{$sName}` SET" .
+					" {$sFields}" .
+					" WHERE `{$sPrimary}` = '{$this->aRecord[$sPrimary]}'";
+
+		// Update the record
+		_MySQL::exec($sSQL);
+
+		// Clear changed fields
+		$this->aChanged = array();
+
+		// Return that we updated
+		return true;
 	}
 }

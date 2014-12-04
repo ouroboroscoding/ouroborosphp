@@ -149,12 +149,19 @@ class _MyRedis
 			return self::$aCons[$sWhich]['redis'];
 		}
 
-		// Get the config info
-		$aConf	= _Config::get(array('redis', $server, $type), array(
-			'host'		=> '127.0.0.1',
-			'port'		=> '6379',
-			'key'		=> null
-		));
+		// Store the conf as the type
+		$aConf	= $type;
+
+		// As long as the conf is a string, which it will always be the first time
+		while(is_string($aConf))
+		{
+			// Get the config info
+			$aConf	= _Config::get(array('redis', $server, $aConf), array(
+				'host'		=> '127.0.0.1',
+				'port'		=> '6379',
+				'key'		=> null
+			));
+		}
 
 		// Create a new instance of Redis
 		$oRedis = new Redis;
@@ -577,7 +584,7 @@ class _MyRedis
 	 * @access public
 	 * @static
 	 * @param string $server			The server to set the key on
-	 * @param array[] $values			The array(key, value) pairs to set
+	 * @param array[] $values			A hash of key to value pairs to set
 	 * @param uint $ttl					If set, a TTL will be set on each key
 	 * @return bool
 	 */
@@ -591,12 +598,12 @@ class _MyRedis
 
 		// Store the value whether there's an expiration time or not
 		if($ttl) {
-			foreach($values as $aSet) {
-				$oRedis->setex($aSet[0], $ttl, $aSet[1]);
+			foreach($values as $sKey => $mValue) {
+				$oRedis->setex($sKey, $ttl, $mValue);
 			}
 		} else {
-			foreach($values as $aSet) {
-				$oRedis->set($aSet[0], $aSet[1]);
+			foreach($values as $sKey => $mValue) {
+				$oRedis->set($sKey, $mValue);
 			}
 		}
 

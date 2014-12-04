@@ -360,7 +360,7 @@ class _OS
 	 */
 	public static function notify(/*string*/ $subject, /*string*/ $message)
 	{
-		mail(implode(',', _Config::get('developers:emails')), php_uname('n') . ' ' . $subject, $message);
+		mail(implode(',', _Config::get('developer:emails')), php_uname('n') . ' ' . $subject, $message);
 	}
 
 	/**

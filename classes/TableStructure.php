@@ -151,7 +151,7 @@ class _TableStructure
 	{
 		// If the field doesn't exist
 		if(!isset($this->aFields[$field])) {
-			trigger_error("TableStructure::escapeField Error: No such field \"{$field}\".", E_USER_ERROR);
+			trigger_error(__METHOD__ . " Error: No such field \"{$field}\".", E_USER_ERROR);
 		}
 
 		// Return the value based on the type
