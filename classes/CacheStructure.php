@@ -21,18 +21,9 @@ class _CacheStructure
 	 * Validation constants
 	 */
 	const REGEX_SERVER	= '/^[a-zA-Z0-9_-]+$/';
+	const REGEX_NAME	= '/^[a-zA-Z0-9_]+$/';
 	const REGEX_FIELD	= '/^[a-zA-Z0-9_]+$/';
 	/**#@-*/
-
-	/**
-	 * Server
-	 *
-	 * The server the keys are stored on
-	 *
-	 * @var string
-	 * @access private
-	 */
-	private $sServer;
 
 	/**
 	 * Field
@@ -45,6 +36,26 @@ class _CacheStructure
 	private $sField;
 
 	/**
+	 * Name
+	 *
+	 * Holds the primary name of the type used to make the cache key
+	 *
+	 * @var string
+	 * @access private
+	 */
+	private $sName;
+
+	/**
+	 * Server
+	 *
+	 * The server the keys are stored on
+	 *
+	 * @var string
+	 * @access private
+	 */
+	private $sServer;
+
+	/**
 	 * Constructor
 	 *
 	 * Initialises the instance and makes sure the passed values are correct
@@ -52,14 +63,20 @@ class _CacheStructure
 	 * @name _CacheStructure
 	 * @access public
 	 * @param string $server			The name of the server the cache is on
+	 * @param string $name				The primary name to use to make the cache key
 	 * @param string $field				The field to use to make the cache key
 	 * @return _CacheStructure
 	 */
-	public function __construct(/*string*/ $server, /*string|strings*/ $field)
+	public function __construct(/*string*/ $server, /*string*/ $name, /*string*/ $field)
 	{
 		// Validate the server
 		if(!preg_match(self::REGEX_SERVER, $server)) {
 			trigger_error(__METHOD__ . ' Error: Invalid characters in the cache server', E_USER_ERROR);
+		}
+
+		// Validate the name
+		if(!preg_match(self::REGEX_NAME, $name)) {
+			trigger_error(__METHOD__ . ' Error: Invalid characters in the cache name', E_USER_ERROR);
 		}
 
 		// Validate the field
@@ -68,22 +85,9 @@ class _CacheStructure
 		}
 
 		// Store the variables
-		$this->sServer	= $server;
 		$this->sField	= $field;
-	}
-
-	/**
-	 * Get Server
-	 *
-	 * Returns the cache server
-	 *
-	 * @name getServer
-	 * @access public
-	 * @return string
-	 */
-	public function getServer()
-	{
-		return $this->sServer;
+		$this->sName	= $name;
+		$this->sServer	= $server;
 	}
 
 	/**
@@ -98,5 +102,33 @@ class _CacheStructure
 	public function getField()
 	{
 		return $this->sField;
+	}
+
+	/**
+	 * Get Name
+	 *
+	 * Returns the cache name
+	 *
+	 * @name getName
+	 * @access public
+	 * @return string
+	 */
+	public function getName()
+	{
+		return $this->sName;
+	}
+
+	/**
+	 * Get Server
+	 *
+	 * Returns the cache server
+	 *
+	 * @name getServer
+	 * @access public
+	 * @return string
+	 */
+	public function getServer()
+	{
+		return $this->sServer;
 	}
 }

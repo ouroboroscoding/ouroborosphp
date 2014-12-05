@@ -34,12 +34,77 @@ abstract class _CacheTable extends _Table
 		parent::__construct($record);
 
 		// Get the cache structure
-		$oCacheStruct	= $this->getCacheStructure();
+		$oCacheStruct	= $this->cacheStructure();
 
 		// If the structure isn't valid
 		if(!is_a($oCacheStruct, '_CacheStructure')) {
-			trigger_error(__METHOD__ . ' Error: getCacheStructure must return an instances of _CacheStructure.', E_USER_ERROR);
+			trigger_error(__METHOD__ . ' Error: cacheStructure must return an instances of _CacheStructure.', E_USER_ERROR);
 		}
+	}
+
+	/**
+	 * Cache Init
+	 *
+	 * Does nothing, meant to be overriden by child classes in order to setup
+	 * other parts of the class before the cache is stored
+	 *
+	 * @name cacheInit
+	 * @access protected
+	 * @return void
+	 */
+	protected function cacheInit() {}
+
+	/**
+	 * Cache Store
+	 *
+	 * Stores the instance in the cache based on the _CacheStructure
+	 *
+	 * @name cacheStore
+	 * @access private
+	 * @return void
+	 */
+	private function cacheStore()
+	{
+		/** Get the _CacheStructure from the child
+		 * @var _CacheStructure */
+		$oCache	= $this->cacheStructure();
+
+		// Generate the values part of the key based on the field(s)
+		$sValue		= $this->get($oCache->getField());
+
+		// Generate the key
+		$sKey	= $this->generateKey($oCache->getName(), $sValue);
+
+		// Store the instance
+		_MyCache::set($oCache->getServer(), $sKey, serialize($this));
+	}
+
+	/**
+	 * Cache Structure
+	 *
+	 * Must be implemented by every child to return a _CacheStructure instance
+	 * that matches the cache info for the child
+	 *
+	 * @name cacheStructure
+	 * @access protected
+	 * @abstract
+	 * @return _CacheStructure
+	 */
+	abstract protected function cacheStructure();
+
+	/**
+	 * Cache Update
+	 *
+	 * Does nothing, meant to be overriden by child classes in order to update
+	 * other parts of the class before the cache is updated
+	 *
+	 * @name cacheUpdate
+	 * @access protected
+	 * @return bool
+	 */
+	protected function cacheUpdate()
+	{
+		return false;
 	}
 
 	/**
@@ -79,14 +144,18 @@ abstract class _CacheTable extends _Table
 		$oClass	= new $sClass(array());
 
 		// Then get the structures for both
-		$oTable	= $oClass->getStructure();
-		$oCache	= $oClass->getCacheStructure();
+		$oCache	= $oClass->cacheStructure();
 
-		// Get the cache field
+		// Get the cache server, name, and field
+		$sCacheServer	= $oCache->getServer();
+		$sCacheName		= $oCache->getName();
 		$sCacheField	= $oCache->getField();
 
 		// Look for all keys in the cache
-		$aCache	= _MyCache::getMultiple($oCache->getServer(), self::generateKey($oTable->getName(), $value));
+		$aCache	= _MyCache::getMultiple($sCacheServer, self::generateKey($sCacheName, $value));
+
+		var_dump($aCache);
+		echo "\n";
 
 		// Go through each instance and verify it was found
 		foreach($aCache as $i => $mInstance)
@@ -113,6 +182,9 @@ abstract class _CacheTable extends _Table
 			// Find the raw records
 			$aRecords	= self::findByField($sCacheField, $aNotFound, true);
 
+			var_dump($aRecords);
+			echo "\n";
+
 			// Go through each record returned
 			foreach($aRecords as $aRecord)
 			{
@@ -120,17 +192,17 @@ abstract class _CacheTable extends _Table
 				$oInstance	= new $sClass($aRecord);
 
 				// Get additional data
-				$oInstance->initCache();
+				$oInstance->cacheInit();
 
 				// Add it to the list of members to cache
-				$aCache[self::generateKey($oTable->getName(), $aRecord[$sCacheField])]	= serialize($oInstance);
+				$aCache[self::generateKey($sCacheName, $aRecord[$sCacheField])]	= serialize($oInstance);
 
 				// Add it to the list of instances we need to return
 				$aInstances[$aRecord[$sCacheField]]	= $oInstance;
 			}
 
 			// Cache the members
-			_MyCache::setMultiple($oCache->getServer(), $aCache);
+			_MyCache::setMultiple($sCacheServer, $aCache);
 
 			// Make sure we set all the values just in case one wasn't found
 			foreach($value as $v) {
@@ -152,6 +224,9 @@ abstract class _CacheTable extends _Table
 		foreach($value as $v) {
 			$aReturn[$v]	= $aInstances[$v];
 		}
+
+		// Return the instances
+		return $aReturn;
 	}
 
 	/**
@@ -185,67 +260,6 @@ abstract class _CacheTable extends _Table
 	}
 
 	/**
-	 * Get Cache Structure
-	 *
-	 * Must be implemented by every child to return a _CacheStructure instance
-	 * that matches the cache info for the child
-	 *
-	 * @name getCacheStructure
-	 * @access protected
-	 * @abstract
-	 * @return _CacheStructure
-	 */
-	abstract protected function getCacheStructure();
-
-	/**
-	 * Init Cache
-	 *
-	 * Does nothing, meant to be overriden by child classes in order to setup
-	 * other parts of the class before the cache is stored
-	 *
-	 * @name initCache
-	 * @access protected
-	 * @return void
-	 */
-	protected function initCache() {}
-
-	/**
-	 * Store Cache
-	 *
-	 * Stores the instance in the cache based on the _CacheStructure
-	 *
-	 * @name storeCache
-	 * @access protected
-	 * @return void
-	 */
-	protected function storeCache()
-	{
-		/** Get the _TableStructure from the child
-		 * @var _TableStructure */
-		$oTable	= $this->getCacheStructure();
-
-		// Get the table name
-		$sName		= $oTable->getName();
-
-		/** Get the _CacheStructure from the child
-		 * @var _CacheStructure */
-		$oCache	= $this->getCacheStructure();
-
-		// Get the server and field
-		$sServer	= $oCache->getServer();
-		$sField		= $oCache->getField();
-
-		// Generate the values part of the key based on the field(s)
-		$sValue		= $this->get($sField);
-
-		// Generate the key
-		$sKey	= $this->generateKey($sName, $sValue);
-
-		// Store the instance
-		_MyCache::set($sServer, $sKey, serialize($this));
-	}
-
-	/**
 	 * Update
 	 *
 	 * Overrides _Table::update in order to store the cache
@@ -266,22 +280,7 @@ abstract class _CacheTable extends _Table
 		if($bRet)
 		{
 			// Store the instance in the cache
-			$this->storeCache();
+			$this->cacheStore();
 		}
-	}
-
-	/**
-	 * Update Cache
-	 *
-	 * Does nothing, meant to be overriden by child classes in order to update
-	 * other parts of the class before the cache is updated
-	 *
-	 * @name updateCache
-	 * @access protected
-	 * @return bool
-	 */
-	protected function updateCache()
-	{
-		return false;
 	}
 }

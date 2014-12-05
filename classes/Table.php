@@ -56,7 +56,7 @@ abstract class _Table
 	public function __construct(array $record)
 	{
 		// Get the table structure
-		$oTableStructure	= $this->getStructure();
+		$oTableStructure	= $this->tableStructure();
 
 		// If the structure isn't valid
 		if(!is_a($oTableStructure, '_TableStructure')) {
@@ -95,7 +95,7 @@ abstract class _Table
 	{
 		/** Get the structure from the calling class
 		 * @var _TableStructure */
-		$oInfo		= $this->getStructure();
+		$oInfo		= $this->tableStructure();
 
 		// Get the full table name, fields, and primary key
 		$sName		= $oInfo->getName();
@@ -144,7 +144,7 @@ abstract class _Table
 
 		/** Get the structure and details
 		 * @var _TableStructure */
-		$oStruct	= $oClass->getStructure();
+		$oStruct	= $oClass->tableStructure();
 		$sName		= $oStruct->getName();
 		$aFields	= $oStruct->getFields();
 		$sPrimary	= $oStruct->getPrimary();
@@ -219,7 +219,7 @@ abstract class _Table
 
 		/** Get the structure and details
 		 * @var _TableStructure */
-		$oStruct	= $oClass->getStructure();
+		$oStruct	= $oClass->tableStructure();
 		$sName		= $oStruct->getName();
 		$aFields	= $oStruct->getFields();
 		$sPrimary	= $oStruct->getPrimary();
@@ -322,17 +322,17 @@ abstract class _Table
 	}
 
 	/**
-	 * Get Structure
+	 * Table Structure
 	 *
 	 * Must be implemented by every child to return a _TableStructure instance
 	 * that matches the table info for the child
 	 *
-	 * @name getStructure
+	 * @name tableStructure
 	 * @access protected
 	 * @abstract
 	 * @return _TableStructure
 	 */
-	abstract protected function getStructure();
+	abstract protected function tableStructure();
 
 	/**
 	 * Insert
@@ -349,7 +349,7 @@ abstract class _Table
 	{
 		/** Get the structure from the calling class
 		 * @var _TableStructure */
-		$oInfo		= $this->getStructure();
+		$oInfo		= $this->tableStructure();
 
 		// Get the full table name, fields, and primary key
 		$sName		= $oInfo->getName();
@@ -494,7 +494,7 @@ abstract class _Table
 	{
 		/** Get the structure from the calling class
 		 * @var _TableStructure */
-		$oInfo		= $this->getStructure();
+		$oInfo		= $this->tableStructure();
 
 		// Get the full table name, fields, and primary key
 		$sName		= $oInfo->getName();
