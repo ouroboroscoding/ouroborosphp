@@ -79,7 +79,7 @@ class _TableStructure
 	 *
 	 * Holds the list of fields in the table and their attributes
 	 *
-	 * @var array[]
+	 * @var array
 	 * @access private
 	 */
 	private $aFields;
@@ -92,7 +92,7 @@ class _TableStructure
 	 * @name _TableStructure
 	 * @access public
 	 * @param string $name				The name of the table
-	 * @param array $fields				The list of fields array('[field'] => [array('[attr]' => [type]), etc)
+	 * @param array $fields				The list of fields array('field' => 'type', etc)
 	 * @param string $primary			The primary key field for this table
 	 * @param bool $auto_inc			Wether the primary key is auto_increment or not
 	 * @return _TableStructure
@@ -210,7 +210,7 @@ class _TableStructure
 	 *
 	 * @name getFields
 	 * @access public
-	 * @return strings[]
+	 * @return array
 	 */
 	public function getFields()
 	{

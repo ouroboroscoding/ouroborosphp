@@ -59,7 +59,7 @@ abstract class _Table
 		$oTableStructure	= $this->getStructure();
 
 		// If the structure isn't valid
-		if(!($oTableStructure instanceof _TableStructure)) {
+		if(!is_a($oTableStructure, '_TableStructure')) {
 			trigger_error('Table Error: getStructure must return an instances of _TableStructure.', E_USER_ERROR);
 		}
 
@@ -226,7 +226,7 @@ abstract class _Table
 
 		// If the field is not valid
 		if(!isset($aFields[$field])) {
-			trigger_error(__METHOD__ . ' Error: Invalid $field argument passed.', E_USER_ERROR);
+			trigger_error(__METHOD__ . ' Error: Invalid $field (' . $field . ') argument passed.', E_USER_ERROR);
 		}
 
 		// Build the list of SELECT fields
