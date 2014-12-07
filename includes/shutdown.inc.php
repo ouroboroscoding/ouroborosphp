@@ -45,22 +45,39 @@
 							'Message: ' . $aErr['message'] . "\n" .
 							'Line: ' . $aErr['file'] . ' @ ' . $aErr['line'] . "\n";
 
+			// If we're not in CLI mode add additional info
 			if(!_OS::isCLI())
 			{
-				$sIP	= _OS::getClientIP();
-
+				// Add the URL, referer, session, and IP
 				$sMessage  .= 'URL: ' . $_SERVER['REQUEST_URI'] . "\n" .
 								'Referer: ' . (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : 'N/A') . "\n" .
-								'App: ' . $GLOBALS['gsAppType'] . "\n" .
-								'Controller: ' . $GLOBALS['gsController'] . "\n" .
 								'Session ID: ' . session_id() . "\n" .
-								'Client IP: ' . $sIP . "\n";
+								'Client IP: ' . _OS::getClientIP() . "\n";
 
+				// If someone set the global shutdown fields variable
+				if(isset($GLOBALS['_gaShutdown']))
+				{
+					// Add each value by hash name
+					foreach($GLOBALS['_gaShutdown'] as $n => $s) {
+						$sMessage	.= $n . ': ' . $s . "\n";
+					}
+				}
+
+				// Add the post variables if we're in POST mode
 				if($_SERVER['REQUEST_METHOD'] == 'POST') {
 					$sMessage  .= 'POST: ' . json_encode($_POST) . "\n";
 				}
 			}
-			_OS::notify('shutdown error', $sMessage);
+
+			// If we're in CLI mode, or the user is a developer, print the message
+			if(OS::isCLI()) {
+				echo $sMessage;
+			} else if(OS::isDeveloper()) {
+				echo '<pre>', $sMessage, '</pre>';
+			} else {
+				// Notify a developer of an issue
+				_OS::notify('shutdown error', $sMessage);
+			}
 		}
 	}
 
