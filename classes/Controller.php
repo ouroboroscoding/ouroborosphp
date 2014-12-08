@@ -124,7 +124,6 @@ abstract class _Controller
 		// Set a 404 in the header and added the message
 		header('x', true, 404);
 		$oView	= new _View($template);
-		$oView->assign('_controller', '404');
 		$oView->assign('requested_url', $_SERVER['REQUEST_URI']);
 		foreach($vars as $n => $v) {
 			$oView->assign($n, $v);
