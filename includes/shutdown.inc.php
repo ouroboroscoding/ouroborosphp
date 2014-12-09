@@ -70,9 +70,9 @@
 			}
 
 			// If we're in CLI mode, or the user is a developer, print the message
-			if(OS::isCLI()) {
+			if(_OS::isCLI()) {
 				echo $sMessage;
-			} else if(OS::isDeveloper()) {
+			} else if(_OS::isDeveloper()) {
 				echo '<pre>', $sMessage, '</pre>';
 			} else {
 				// Notify a developer of an issue

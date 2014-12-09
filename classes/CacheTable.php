@@ -114,7 +114,7 @@ abstract class _CacheTable extends _Table
 			else
 			{
 				$oInstance	= unserialize($mInstance);
-				$aInstances[$oInstance->get($sCacheField)]	= $oInstance;
+				$aInstances[$value[$i]]	= $oInstance;
 			}
 		}
 
@@ -138,7 +138,7 @@ abstract class _CacheTable extends _Table
 			}
 
 			// Cache the members
-			_MyCache::setMultiple($sCacheServer, $aCache);
+			_MyCache::setMultiple($oClass->getServer(), $aCache);
 
 			// Make sure we set all the values just in case one wasn't found
 			foreach($value as $v) {
