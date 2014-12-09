@@ -101,6 +101,9 @@ abstract class _CacheObject
 			return null;
 		}
 
+		// Get the called class
+		$sClass	= get_called_class();
+
 		// Look for all keys in the cache
 		$aCache	= _MyCache::getMultiple(static::getServer(), static::generateKey($value));
 
