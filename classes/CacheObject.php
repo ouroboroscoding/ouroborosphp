@@ -101,11 +101,12 @@ abstract class _CacheObject
 			return null;
 		}
 
-		// Get the called class
+		// Get the called class and generate an empty one
 		$sClass	= get_called_class();
+		$oClass	= new $sClass();
 
 		// Look for all keys in the cache
-		$aCache	= _MyCache::getMultiple(static::getServer(), static::generateKey($value));
+		$aCache	= _MyCache::getMultiple($oClass->getServer(), $oClass->generateKey($value));
 
 		// Go through each instance and store it
 		foreach($aCache as $i => $mInstance) {
@@ -119,8 +120,8 @@ abstract class _CacheObject
 	/**
 	 * Generate Key
 	 *
-	 * Generates single or multiple keys when called statically. When called
-	 * from an instance that instance should be used to create a single key.
+	 * Generates single or multiple keys when called with passed values. When
+	 * called with no value the instance used should create a single key.
 	 *
 	 * @name generateKey
 	 * @access protected
