@@ -48,7 +48,7 @@ abstract class _CacheObject
 	 * @param array $record				The record related to this instance
 	 * @return _CacheObject
 	 */
-	public function __construct(array $record = array())
+	public function __construct(array $record)
 	{
 		// Store the record and clear the changed state
 		$this->aRecord	= $record;
@@ -103,7 +103,7 @@ abstract class _CacheObject
 
 		// Get the called class and generate an empty one
 		$sClass	= get_called_class();
-		$oClass	= new $sClass();
+		$oClass	= new $sClass(array());
 
 		// Look for all keys in the cache
 		$aCache	= _MyCache::getMultiple($oClass->getServer(), $oClass->generateKey($value));

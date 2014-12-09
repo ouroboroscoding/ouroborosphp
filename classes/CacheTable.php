@@ -28,7 +28,7 @@ abstract class _CacheTable extends _Table
 	 * @param array $record				The record as an associative array
 	 * @return _CacheTable
 	 */
-	public function __construct(array $record = array())
+	public function __construct(array $record)
 	{
 		// Call the parent constructor
 		parent::__construct($record);
@@ -97,7 +97,7 @@ abstract class _CacheTable extends _Table
 
 		// Get the called class and generate an empty one
 		$sClass	= get_called_class();
-		$oClass	= new $sClass();
+		$oClass	= new $sClass(array());
 
 		// Look for all keys in the cache
 		$aCache	= _MyCache::getMultiple($oClass->getServer(), $oClass->generateKey($value));
