@@ -50,14 +50,6 @@ abstract class _CacheObject
 	 */
 	public function __construct(array $record)
 	{
-		// Get the cache structure
-		$oCacheStruct	= $this->cacheStructure();
-
-		// If the structure isn't valid
-		if(!is_a($oCacheStruct, '_CacheStructure')) {
-			trigger_error(__METHOD__ . ' Error: cacheStructure must return an instances of _CacheStructure.', E_USER_ERROR);
-		}
-
 		// Store the record and clear the changed state
 		$this->aRecord	= $record;
 		$this->bChanged	= false;
@@ -74,18 +66,8 @@ abstract class _CacheObject
 	 */
 	public function delete()
 	{
-		/** Get the _CacheStructure from the child
-		 * @var _CacheStructure */
-		$oCache	= $this->cacheStructure();
-
-		// Generate the values part of the key based on the field(s)
-		$sValue		= $this->get($oCache->getField());
-
-		// Generate the key
-		$sKey	= $this->generateKey($oCache->getName(), $sValue);
-
-		// Store the instance
-		_MyCache::delete($oCache->getServer(), $sKey);
+		// Delete the instance
+		_MyCache::delete($this->getServer(), $this->generateKey());
 	}
 
 	/**
@@ -119,19 +101,8 @@ abstract class _CacheObject
 			return null;
 		}
 
-		// Look up the cache structure
-		//	First create an instance of the calling class
-		$sClass	= get_called_class();
-		$oClass	= new $sClass(array());
-
-		// Then get the cache structure from it
-		$oCache	= $oClass->cacheStructure();
-
-		// Get the cache field
-		$sCacheField	= $oCache->getField();
-
 		// Look for all keys in the cache
-		$aCache	= _MyCache::getMultiple($oCache->getServer(), self::generateKey($oCache->getName(), $value));
+		$aCache	= _MyCache::getMultiple(static::getServer(), static::generateKey($value));
 
 		// Go through each instance and store it
 		foreach($aCache as $i => $mInstance) {
@@ -145,32 +116,16 @@ abstract class _CacheObject
 	/**
 	 * Generate Key
 	 *
-	 * Generates a cache key or keys based on the table name and field(s)
+	 * Generates single or multiple keys when called statically. When called
+	 * from an instance that instance should be used to create a single key.
 	 *
 	 * @name generateKey
 	 * @access protected
-	 * @static
-	 * @param string $name				The primary part of the key
-	 * @param string|string[] $value	The value or values used to make the key or keys
-	 * @return string[]
+	 * @abstract
+	 * @param string|string[] $value			Passed when called statically. Passing multiple values results in multiple keys
+	 * @return string
 	 */
-	protected static function generateKey(/*string*/ $name, /*string|string[]*/ $value)
-	{
-		// If multiple values were passed
-		if(is_array($value))
-		{
-			$aRet	= array();
-			foreach($value as $v) {
-				$aRet[] = md5($name . ':' . $v);
-			}
-			return $aRet;
-		}
-		// Else if only one value was passed
-		else
-		{
-			return md5($name . ':' . $value);
-		}
-	}
+	abstract protected function generateKey(/*string|string[]*/ $value);
 
 	/**
 	 * Get
@@ -189,6 +144,18 @@ abstract class _CacheObject
 				$this->aRecord[$field] :
 				null;
 	}
+
+	/**
+	 * Get Server
+	 *
+	 * Should return the server to use to store keys
+	 *
+	 * @name getServer
+	 * @access protected
+	 * @abstract
+	 * @return string
+	 */
+	abstract protected function getServer();
 
 	/**
 	 * Insert
@@ -239,18 +206,8 @@ abstract class _CacheObject
 	 */
 	private function store()
 	{
-		/** Get the _CacheStructure from the child
-		 * @var _CacheStructure */
-		$oCache	= $this->cacheStructure();
-
-		// Generate the values part of the key based on the field(s)
-		$sValue		= $this->get($oCache->getField());
-
-		// Generate the key
-		$sKey	= $this->generateKey($oCache->getName(), $sValue);
-
 		// Store the instance
-		_MyCache::set($oCache->getServer(), $sKey, json_encode($this->aRecord));
+		_MyCache::set($this->getServer(), $this->generateKey(), json_encode($this->aRecord));
 
 		// Reset the changed flag
 		$this->bChanged	= false;

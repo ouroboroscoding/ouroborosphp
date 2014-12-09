@@ -32,27 +32,7 @@ abstract class _CacheTable extends _Table
 	{
 		// Call the parent constructor
 		parent::__construct($record);
-
-		// Get the cache structure
-		$oCacheStruct	= $this->cacheStructure();
-
-		// If the structure isn't valid
-		if(!is_a($oCacheStruct, '_CacheStructure')) {
-			trigger_error(__METHOD__ . ' Error: cacheStructure must return an instances of _CacheStructure.', E_USER_ERROR);
-		}
 	}
-
-	/**
-	 * Cache Init
-	 *
-	 * Does nothing, meant to be overriden by child classes in order to setup
-	 * other parts of the class before the cache is stored
-	 *
-	 * @name cacheInit
-	 * @access protected
-	 * @return void
-	 */
-	protected function cacheInit() {}
 
 	/**
 	 * Cache Store
@@ -65,32 +45,9 @@ abstract class _CacheTable extends _Table
 	 */
 	private function cacheStore()
 	{
-		/** Get the _CacheStructure from the child
-		 * @var _CacheStructure */
-		$oCache	= $this->cacheStructure();
-
-		// Generate the values part of the key based on the field(s)
-		$sValue		= $this->get($oCache->getField());
-
-		// Generate the key
-		$sKey	= $this->generateKey($oCache->getName(), $sValue);
-
 		// Store the instance
-		_MyCache::set($oCache->getServer(), $sKey, serialize($this));
+		_MyCache::set($this->getServer(), $this->generateKey(), serialize($this));
 	}
-
-	/**
-	 * Cache Structure
-	 *
-	 * Must be implemented by every child to return a _CacheStructure instance
-	 * that matches the cache info for the child
-	 *
-	 * @name cacheStructure
-	 * @access protected
-	 * @abstract
-	 * @return _CacheStructure
-	 */
-	abstract protected function cacheStructure();
 
 	/**
 	 * Cache Update
@@ -138,24 +95,8 @@ abstract class _CacheTable extends _Table
 			return null;
 		}
 
-		// Look up the table and cache details
-		//	First create an instance of the calling class
-		$sClass	= get_called_class();
-		$oClass	= new $sClass(array());
-
-		// Then get the structures for both
-		$oCache	= $oClass->cacheStructure();
-
-		// Get the cache server, name, and field
-		$sCacheServer	= $oCache->getServer();
-		$sCacheName		= $oCache->getName();
-		$sCacheField	= $oCache->getField();
-
 		// Look for all keys in the cache
-		$aCache	= _MyCache::getMultiple($sCacheServer, self::generateKey($sCacheName, $value));
-
-		var_dump($aCache);
-		echo "\n";
+		$aCache	= _MyCache::getMultiple(static::getServer(), static::generateKey($value));
 
 		// Go through each instance and verify it was found
 		foreach($aCache as $i => $mInstance)
@@ -179,26 +120,17 @@ abstract class _CacheTable extends _Table
 		// If any instances weren't found
 		if(count($aNotFound))
 		{
-			// Find the raw records
-			$aRecords	= self::findByField($sCacheField, $aNotFound, true);
-
-			var_dump($aRecords);
-			echo "\n";
+			// Find the instances
+			$aObjects	= static::getMissing($aNotFound);
 
 			// Go through each record returned
-			foreach($aRecords as $aRecord)
+			foreach($aObjects as $sValue => $oObject)
 			{
-				// Generate the instance
-				$oInstance	= new $sClass($aRecord);
-
-				// Get additional data
-				$oInstance->cacheInit();
-
 				// Add it to the list of members to cache
-				$aCache[self::generateKey($sCacheName, $aRecord[$sCacheField])]	= serialize($oInstance);
+				$aCache[$oObject->generateKey()]	= serialize($oObject);
 
 				// Add it to the list of instances we need to return
-				$aInstances[$aRecord[$sCacheField]]	= $oInstance;
+				$aInstances[$sValue]	= $oObject;
 			}
 
 			// Cache the members
@@ -232,32 +164,43 @@ abstract class _CacheTable extends _Table
 	/**
 	 * Generate Key
 	 *
-	 * Generates a cache key or keys based on the table name and field(s)
+	 * Generates single or multiple keys when called statically. When called
+	 * from an instance that instance should be used to create a single key.
 	 *
 	 * @name generateKey
 	 * @access protected
-	 * @static
-	 * @param string $name				The primary part of the key
-	 * @param string|string[] $value	The value or values used to make the key or keys
-	 * @return string[]
+	 * @abstract
+	 * @param string|string[] $value			Passed when called statically. Passing multiple values results in multiple keys
+	 * @return string
 	 */
-	protected static function generateKey(/*string*/ $name, /*string|string[]*/ $value)
-	{
-		// If multiple values were passed
-		if(is_array($value))
-		{
-			$aRet	= array();
-			foreach($value as $v) {
-				$aRet[] = md5($name . ':' . $v);
-			}
-			return $aRet;
-		}
-		// Else if only one value was passed
-		else
-		{
-			return md5($name . ':' . $value);
-		}
-	}
+	abstract protected function generateKey(/*string|string[]*/ $value);
+
+	/**
+	 * Get Missing
+	 *
+	 * Is passed the values of all missing instances and should return a list of
+	 * instances hashed by their value. Used by findInCache to cache records
+	 * that could not be found
+	 *
+	 * @name getMissing
+	 * @access protected
+	 * @abstract
+	 * @param string[] $values			The list of values that did not return a result
+	 * @return _CacheTable[]
+	 */
+	abstract protected function getMissing(array $values);
+
+	/**
+	 * Get Server
+	 *
+	 * Should return the server to use to store keys
+	 *
+	 * @name getServer
+	 * @access protected
+	 * @abstract
+	 * @return string
+	 */
+	abstract protected function getServer();
 
 	/**
 	 * Update
