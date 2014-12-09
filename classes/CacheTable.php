@@ -28,7 +28,7 @@ abstract class _CacheTable extends _Table
 	 * @param array $record				The record as an associative array
 	 * @return _CacheTable
 	 */
-	public function __construct(array $record)
+	public function __construct(array $record = array())
 	{
 		// Call the parent constructor
 		parent::__construct($record);

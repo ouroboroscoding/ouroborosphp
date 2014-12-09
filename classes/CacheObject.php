@@ -48,7 +48,7 @@ abstract class _CacheObject
 	 * @param array $record				The record related to this instance
 	 * @return _CacheObject
 	 */
-	public function __construct(array $record)
+	public function __construct(array $record = array())
 	{
 		// Store the record and clear the changed state
 		$this->aRecord	= $record;
