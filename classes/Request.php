@@ -103,9 +103,10 @@ class _Request
 	 * @access public
 	 * @param string $url				The URL to fetch
 	 * @param array $options			Optional arguments
+	 * @param array &$result			If passed, results will be saved here as well as internally
 	 * @return array					'content', 'content_type', 'size', 'status_code'
 	 */
-	public function go(/*string*/ $url, array $options = array())
+	public function go(/*string*/ $url, array $options = array(), /*array*/ &$result = null)
 	{
 		// Check the options
 		_Array::checkOptions($options, array(
@@ -158,6 +159,13 @@ class _Request
 		$this->aLastRequest['size']			= curl_getinfo($this->rCURL, CURLINFO_CONTENT_LENGTH_DOWNLOAD);
 		if($this->aLastRequest['size'] == -1) {
 			$this->aLastRequest['size'] = strlen($this->aLastRequest['content']);
+		}
+
+		// If $result is set
+		if(!is_null($result) && is_array($result)) {
+			foreach($this->aLastRequest as $n => $v) {
+				$result[$n]	= $v;
+			}
 		}
 
 		// Return true only if we received 200 and at least one byte of content
