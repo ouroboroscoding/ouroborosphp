@@ -235,7 +235,7 @@ abstract class _Table
 		// Build the list of values
 		$aValues	= array();
 		foreach($value as $mValue) {
-			$aValues[]	= $oStruct->escapeField($sPrimary, $mValue);
+			$aValues[]	= $oStruct->escapeField($field, $mValue);
 		}
 		$sValues	= implode(',', $aValues);
 
