@@ -57,7 +57,7 @@ abstract class _Controller
 	 * @static
 	 * @param mixed $data				The data to send back
 	 * @param bool $error				If the data is an error message
-	 * @return false
+	 * @return false					Returns false so ::load can return it
 	 */
 	public static function ajaxResponse(/*mixed*/ $data, /*bool*/ $error = false)
 	{
@@ -73,14 +73,16 @@ abstract class _Controller
 		// Encode it and echo it
 		echo json_encode($aJSON);
 
-		// Return false for chaining returns
+		// Return false for ::load
 		return false;
 	}
 
 	/**
 	 * Load
 	 *
-	 * Must be implemented by all classes that extend Controller
+	 * Must be implemented by all classes that extend Controller. Should return
+	 * false if no action should be taken after it's called. e.g. displaying a
+	 * view of some sort.
 	 *
 	 * @name load
 	 * @access public
@@ -99,7 +101,7 @@ abstract class _Controller
 	 * @static
 	 * @param string $url				The URL to redirect to
 	 * @param uint $code				The HTTP code to return
-	 * @return false					Returns false so ::load can return it to the App
+	 * @return false					Returns false so ::load can return it
 	 */
 	public static function redirect(/*string*/ $url, /*uint*/ $code = 302)
 	{
