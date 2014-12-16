@@ -87,7 +87,7 @@ class _HTML
 
 							// Invalid rule
 							default:
-								trigger_error('Invalid rule sent to ' . __METHOD__ . ": {$sType}.", E_USER_NOTICE);
+								trigger_error(__METHOD__ . ' Error: Invalid rule for "' . $sType . '".', E_USER_NOTICE);
 								break;
 						}
 					}
@@ -175,7 +175,7 @@ class _HTML
 
 									// Invalid rule
 									default:
-										trigger_error('Invalid rule sent to ' . __METHOD__ . ": {$sType}.", E_USER_NOTICE);
+										trigger_error(__METHOD__ . ' Error: Invalid rule for "' . $sType . '".', E_USER_NOTICE);
 										break;
 								}
 							}
@@ -186,7 +186,7 @@ class _HTML
 					}
 					else
 					{
-						trigger_error('Invalid or missing field passed to ' . __METHOD__ . ': ' . ((is_array($mField)) ? $mField[0] : $mField), E_USER_WARNING);
+						trigger_error(__METHOD__ . ' Error: Invalid or missing field passed "' . ((is_array($mField)) ? $mField[0] : $mField) . '".', E_USER_WARNING);
 					}
 				}
 

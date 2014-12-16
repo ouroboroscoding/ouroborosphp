@@ -180,7 +180,7 @@ class _OS
 		} else if(isset($_SERVER['REMOTE_ADDR']) && filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP) !== false) {
 			$sIP	= $_SERVER['REMOTE_ADDR'];
 		} else {
-			trigger_error('No client IP exists.', E_USER_WARNING);
+			trigger_error(__METHOD__ . ' Warning: No client IP exists.', E_USER_WARNING);
 			$sIP	= '0.0.0.0';
 		}
 
@@ -336,7 +336,7 @@ class _OS
 			if(file_put_contents($sFile, getmypid() . "\n") === false)
 			{
 				// If it failed, trigger an error, we can't allow the script to run
-				trigger_error("Can't store PID file: {$sFile}", E_USER_ERROR);
+				trigger_error(__METHOD__ . ' Error: Can\'t store PID file "' . $sFile . '".', E_USER_ERROR);
 				continue;
 			}
 
@@ -420,10 +420,8 @@ class _OS
 	public static function processKill(/*uint*/ $pid)
 	{
 		// If it's windows
-		if(self::isWindows())
-		{
-			// Fail
-			trigger_error('Can not call ' . __METHOD__ . ' in Windows.', E_USER_ERROR);
+		if(self::isWindows()) {
+			trigger_error(__METHOD__ . ' Error: Can not call this method in Windows.', E_USER_ERROR);
 		}
 
 		// Terminate

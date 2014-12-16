@@ -60,7 +60,7 @@ class _Array
 		{
 			// If the element doesn't exist, fail
 			if(!isset($a[$element])) {
-				trigger_error(__METHOD__ . ' failed, not all the arrays contain ' . $element, E_USER_ERROR);
+				trigger_error(__METHOD__ . ' Error: Failed to make column, not all arrays contain "' . $element . '".', E_USER_ERROR);
 			}
 
 			// Else, add it to the list

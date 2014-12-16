@@ -8,11 +8,6 @@
  */
 
 /**
- * Required Classes
- */
-require_once 'ouroboros/classes/TableStructure.php';
-
-/**
  * Table class
  *
  * Methods to modify and work with MySQL table records
@@ -60,7 +55,7 @@ abstract class _Table
 
 		// If the structure isn't valid
 		if(!is_a($oTableStructure, '_TableStructure')) {
-			trigger_error('Table Error: getStructure must return an instances of _TableStructure.', E_USER_ERROR);
+			trigger_error(__CLASS__ . ' Error: getStructure must return an instances of _TableStructure.', E_USER_ERROR);
 		}
 
 		// @todo Validate fields and primary key using the table structure
@@ -226,7 +221,7 @@ abstract class _Table
 
 		// If the field is not valid
 		if(!isset($aFields[$field])) {
-			trigger_error(__METHOD__ . ' Error: Invalid $field (' . $field . ') argument passed.', E_USER_ERROR);
+			trigger_error(__METHOD__ . ' Error: Invalid $field argument passed "' . $field . '".', E_USER_ERROR);
 		}
 
 		// Build the list of SELECT fields

@@ -111,17 +111,17 @@ class _Pagination
 	{
 		// Validate the page argument
 		if(!is_numeric($page) || $page < 1) {
-			trigger_error('Invalid $page argument passed to ' . __METHOD__ . ' must be an unsigned int greater than 0. ' . $page . ' passed.', E_USER_ERROR);
+			trigger_error(__CLASS__ . ' Error: Invalid $page argument, must be an unsigned int greater than 0. ' . $page . ' passed.', E_USER_ERROR);
 		}
 
 		// Validate the total argument
 		if(!is_numeric($total) || $total < 1) {
-			trigger_error('Invalid $total argument passed to ' . __METHOD__ . ' must be an unsigned int greater than 0. ' . $total . ' passed.', E_USER_ERROR);
+			trigger_error(__CLASS__ . ' Error: Invalid $total argument, must be an unsigned int greater than 0. ' . $total . ' passed.', E_USER_ERROR);
 		}
 
 		// Validate the toshow argument
 		if(!is_numeric($toshow) || $toshow < 1) {
-			trigger_error('Invalid $toshow argument passed to ' . __METHOD__ . ' must be an unsigned int greater than 0. ' . $toshow . ' passed.', E_USER_ERROR);
+			trigger_error(__CLASS__ . ' Error: Invalid $toshow argument, must be an unsigned int greater than 0. ' . $toshow . ' passed.', E_USER_ERROR);
 		}
 
 		// Store the values
@@ -313,7 +313,7 @@ class _Pagination
 			// If the last part doesn't match the current page
 			$iPage	= array_pop($aURI);
 			if($iPage != $this->iPage) {
-				trigger_error('Invalid page passed to Pagination. ' . $iPage . ' / ' . $this->iPage, E_USER_ERROR);
+				trigger_error(__METHOD__ . ' Error: Invalid page passed. ' . $iPage . ' / ' . $this->iPage, E_USER_ERROR);
 			}
 
 			// If there is no other parts

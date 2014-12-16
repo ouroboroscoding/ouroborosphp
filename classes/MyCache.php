@@ -368,7 +368,7 @@ class _MyCache
 		// Else something is wrong
 		else
 		{
-			trigger_error('Wrong set of parameters for ' . __METHOD__, E_USER_ERROR);
+			trigger_error(__METHOD__ . ' Error: Wrong set of parameters.', E_USER_ERROR);
 		}
 	}
 

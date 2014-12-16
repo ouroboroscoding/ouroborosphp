@@ -101,7 +101,7 @@ class _TableStructure
 	{
 		// Validate the name
 		if(!preg_match(self::REGEX_NAME, $name)) {
-			trigger_error("TableStructure Error: Invalid characters in the table name \"{$name}\".", E_USER_ERROR);
+			trigger_error(__CLASS__ . ' Error: Invalid characters in the table name "' . $name . '".', E_USER_ERROR);
 		}
 
 		// Store it
@@ -112,12 +112,12 @@ class _TableStructure
 		{
 			// Check the name of the field
 			if(!preg_match(self::REGEX_NAME, $sField)) {
-				trigger_error("TableStructure Error: Invalid characters in the field name \"{$name}.{$sField}\".", E_USER_ERROR);
+				trigger_error(__CLASS__ . ' Error: Invalid characters in the field name "' . $name . '.' . $sField . '".', E_USER_ERROR);
 			}
 
 			// Check the type of the field
 			if(!in_array($sType, self::$aValidTypes)) {
-				trigger_error("TableStructure Error: Invalid type \"{$sType}\" for the field \"{$name}.{$sField}\".", E_USER_ERROR);
+				trigger_error(__CLASS__ . ' Error: Invalid type "' . {$sType} . '" for the field "' . $name . '.' . $sField . '".', E_USER_ERROR);
 			}
 
 			// Store the field
@@ -126,7 +126,7 @@ class _TableStructure
 
 		// Validate the primary field is in the list of fields
 		if(!isset($this->aFields[$primary])) {
-			trigger_error("TableStructure Error: Invalid primary field \"{$primary}\".\n" . print_r($fields, true), E_USER_ERROR);
+			trigger_error(__CLASS__ . ' Error: Invalid primary field "' . $primary . '".', E_USER_ERROR);
 		}
 
 		// Store the primary
@@ -151,7 +151,7 @@ class _TableStructure
 	{
 		// If the field doesn't exist
 		if(!isset($this->aFields[$field])) {
-			trigger_error(__METHOD__ . " Error: No such field \"{$field}\".", E_USER_ERROR);
+			trigger_error(__METHOD__ . ' Error: No such field "' . $field . '".', E_USER_ERROR);
 		}
 
 		// Return the value based on the type
@@ -246,7 +246,7 @@ class _TableStructure
 	{
 		// If the field doesn't exist
 		if(!isset($this->aFields[$field])) {
-			trigger_error("TableStructure::validateField Error: No such field \"{$field}\".", E_USER_ERROR);
+			trigger_error(__METHOD__ . ' Error: No such field "' . $field . '".', E_USER_ERROR);
 		}
 
 		// Return based on the type

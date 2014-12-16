@@ -8,11 +8,6 @@
  */
 
 /**
- * Required classes
- */
-require_once 'ouroboros/classes/View.php';
-
-/**
  * Controller Class
  *
  * Base class for all controllers in the system

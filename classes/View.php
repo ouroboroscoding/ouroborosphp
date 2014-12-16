@@ -207,10 +207,7 @@ class _View
 
 		// The file wasn't found, throw an error
 		$aBT	= debug_backtrace();
-		trigger_error(
-			"Couldn't load template \"{$filename}\" in {$aBT[0]['file']} on line {$aBT[0]['line']}.",
-			E_USER_WARNING
-		);
+		trigger_error(__METHOD__ . ' Warning: Couldn\'t load template "' . $filename . '" in ' . $aBT[0]['file'] . ' on line ' . $aBT[0]['line'] . '.', E_USER_WARNING);
 		return null;
 	}
 
@@ -250,10 +247,7 @@ class _View
 		{
 			// The variable wasn't found, so trigger an error with the file and line that called this
 			$aBT	= debug_backtrace();
-			trigger_error(
-				'Undefined property:  ' . __CLASS__ . '::$' . $name . ' in ' . $aBT[0]['file'] . ' on line ' . $aBT[0]['line'],
-				E_USER_NOTICE
-			);
+			trigger_error(__METHOD__ . ' Notice: Undefined property:  ' . __CLASS__ . '::$' . $name . ' in ' . $aBT[0]['file'] . ' on line ' . $aBT[0]['line'] . '.', E_USER_NOTICE);
 			return null;
 		}
 	}
