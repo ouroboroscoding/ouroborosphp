@@ -93,12 +93,11 @@ abstract class _Controller
 	 *
 	 * @name redirect
 	 * @access public
-	 * @static
 	 * @param string $url				The URL to redirect to
 	 * @param uint $code				The HTTP code to return
 	 * @return false					Returns false so ::load can return it
 	 */
-	public static function redirect(/*string*/ $url, /*uint*/ $code = 302)
+	public function redirect(/*string*/ $url, /*uint*/ $code = 302)
 	{
 		header('x', true, $code);
 		header('Location: ' . $url);

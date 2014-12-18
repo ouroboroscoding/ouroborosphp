@@ -117,7 +117,7 @@ class _TableStructure
 
 			// Check the type of the field
 			if(!in_array($sType, self::$aValidTypes)) {
-				trigger_error(__CLASS__ . ' Error: Invalid type "' . {$sType} . '" for the field "' . $name . '.' . $sField . '".', E_USER_ERROR);
+				trigger_error(__CLASS__ . ' Error: Invalid type "' . $sType . '" for the field "' . $name . '.' . $sField . '".', E_USER_ERROR);
 			}
 
 			// Store the field
