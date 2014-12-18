@@ -221,7 +221,7 @@ abstract class _CacheTable extends _Table
 		$bRet	= parent::update($force);
 
 		// Let the child update other aspects of itself
-		$bRet	= $this->updateCache() ? true : $bRet;
+		$bRet	= $this->cacheUpdate() ? true : $bRet;
 
 		// If we updated anything
 		if($bRet)
