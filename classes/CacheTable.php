@@ -172,12 +172,12 @@ abstract class _CacheTable extends _Table
 	 * called with no value the instance used should create a single key.
 	 *
 	 * @name generateKey
-	 * @access protected
+	 * @access public
 	 * @abstract
 	 * @param string|string[] $value			Passed when called statically. Passing multiple values results in multiple keys
 	 * @return string
 	 */
-	abstract protected function generateKey(/*string|string[]*/ $value);
+	abstract public function generateKey(/*string|string[]*/ $value);
 
 	/**
 	 * Get Missing
@@ -200,11 +200,11 @@ abstract class _CacheTable extends _Table
 	 * Should return the server to use to store keys
 	 *
 	 * @name getServer
-	 * @access protected
+	 * @access public
 	 * @abstract
 	 * @return string
 	 */
-	abstract protected function getServer();
+	abstract public function getServer();
 
 	/**
 	 * Update

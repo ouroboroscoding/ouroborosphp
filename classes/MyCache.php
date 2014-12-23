@@ -78,7 +78,7 @@ class _MyCache
 	 * @static
 	 * @param string $server			The server to delete the key from
 	 * @param string $key				The key to delete
-	 * @return void
+	 * @return int
 	 */
 	public static function delete(/*string*/ $server, /*string*/ $key)
 	{
@@ -86,7 +86,7 @@ class _MyCache
 		$oRedis = self::fetchConnection($server, 'write');
 
 		// Delete the key
-		$oRedis->del($key);
+		return $oRedis->del($key);
 	}
 
 	/**
@@ -138,7 +138,7 @@ class _MyCache
 			{
 				// If we fail to authenticate
 				if(!self::$aCons[$sWhich]['redis']->auth(self::$aCons[$sWhich]['auth_key'])) {
-					throw new RedisException('Failed to authenticate Redis server \'' . $server . '\'');
+					throw new _MyCache_Exception('Failed to authenticate Redis server \'' . $server . '\'');
 				}
 
 				// Store the new timestamp
@@ -156,11 +156,12 @@ class _MyCache
 		while(is_string($aConf))
 		{
 			// Get the config info
-			$aConf	= _Config::get(array('redis', $server, $aConf), array(
-				'host'		=> '127.0.0.1',
-				'port'		=> '6379',
-				'key'		=> null
-			));
+			$aConf	= _Config::get(array('redis', $server, $aConf), null);
+		}
+
+		// If there's no such server
+		if(is_null($aConf)) {
+			throw new _MyCache_Exception('No such server "' . $server . '"');
 		}
 
 		// Create a new instance of Redis
@@ -169,7 +170,7 @@ class _MyCache
 		// Try to connect
 		if(!$oRedis->connect($aConf['host'], $aConf['port'])) {
 			if(++$count == 5) {
-				throw new RedisException('Failed to connect to Redis server \'' . $server . '\'');
+				throw new _MyCache_Exception('Failed to connect to Redis server "' . $server . '"');
 			} else {
 				sleep(1);
 				return self::fetchConnection($server, $type, $count);
@@ -189,7 +190,7 @@ class _MyCache
 
 			// If we fail to authenticate
 			if(!$oRedis->auth($aConf['key'])) {
-				throw new RedisException('Failed to authenticate Redis server \'' . $server . '\'');
+				throw new _MyCache_Exception('Failed to authenticate Redis server \'' . $server . '\'');
 			}
 
 			// Store the timestamp
@@ -611,3 +612,13 @@ class _MyCache
 		return $oRedis->exec();
 	}
 }
+
+/**
+ * MyCache Exception class
+ *
+ * Is used for any exceptions thrown from inside _MyCache
+ *
+ * @name _MyCache_Exception
+ * @extends Exception
+ */
+class _MyCache_Exception extends Exception {}
