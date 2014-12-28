@@ -282,6 +282,112 @@ abstract class _Table
 	}
 
 	/**
+	 * Find By Fields
+	 *
+	 * Looks up records by a specific set of fields and values
+	 *
+	 * @name findByFields
+	 * @access public
+	 * @static
+	 * @param array $values				A hash of fields to values
+	 * @param string|string[]			The field or fields to order by
+	 * @param bool $raw					If true arrays of records will be returned instead of _Table instances
+	 * @return array
+	 */
+	public static function findByFields(array $values, /*string|string[]*/ $orderby = null, /*bool*/ $raw = false)
+	{
+		// Look up the table details
+		//	First create an instance of the calling class
+		$sClass	= get_called_class();
+		$oClass	= new $sClass(array());
+
+		/** Get the structure and details
+		 * @var _TableStructure */
+		$oStruct	= $oClass->tableStructure();
+		$sName		= $oStruct->getName();
+		$aFields	= $oStruct->getFields();
+		$sPrimary	= $oStruct->getPrimary();
+
+		// Build the list of SELECT fields
+		$sSelect	= '`' . implode('`, `', array_keys($aFields)) . '`';
+
+		// Go through each value
+		$aWhere		= array();
+		foreach($values as $sField => $mValue)
+		{
+			// First make sure the field exists
+			if(!isset($aFields[$sField])) {
+				trigger_error(__METHOD__ . ' Error: Invalid field passed in $values argument "' . $sField . '".', E_USER_ERROR);
+			}
+
+			// If the value is an array of values
+			if(is_array($mValue))
+			{
+				// Build the list of values
+				$aValues	= array();
+				foreach($mValue as $mVal) {
+					$aValues[]	= $oStruct->escapeField($sField, $mVal);
+				}
+				$aWhere[]	= "`{$sField}` IN (" . implode(',', $aValues) . ')';
+			}
+			// Else if there's just one value
+			else
+			{
+				$aWhere[]	= "`{$sField}` = " . $oStruct->escapeField($sField, $mValue);
+			}
+		}
+
+		// If the order by argument isn't set
+		if(is_null($orderby))
+		{
+			$sOrderBy	= "`{$sPrimary}`";
+		}
+		// Else, check it
+		else
+		{
+			// If there's only a single order by field
+			if(!is_array($orderby)) {
+				$orderby	= array($orderby);
+			}
+
+			// Go through each field
+			$aOrderBy	= array();
+			foreach($orderby as $sField)
+			{
+				// Make sure the field exists
+				if(!isset($aFields[$sField])) {
+					trigger_error(__METHOD__ . ' Error: Invalid field passed in $orderby argument "' . $sField . '".', E_USER_ERROR);
+				}
+
+				$aOrderBy[]	= "`{$sField}`";
+			}
+			$sOrderBy	= implode(', ', $aOrderBy);
+		}
+
+		// Build the query
+		$sSQL	= "SELECT {$sSelect} FROM `{$sName}`" .
+					' WHERE ' . implode(' AND ', $aWhere) .
+					' ORDER BY ' . $sOrderBy;
+
+		// Get the records
+		$aRecords	= _MySQL::select($sSQL, _MySQL::SELECT_ALL);
+
+		// If only raw records were requested
+		if($raw) {
+			return $aRecords;
+		}
+
+		// Else create the instances
+		$aInstances	= array();
+		foreach($aRecords as $aRecord) {
+			$aInstances[$aRecord[$sPrimary]]	= new $sClass($aRecord);
+		}
+
+		// Return the instance or instances
+		return $aInstances;
+	}
+
+	/**
 	 * Get
 	 *
 	 * Returns the value of a field in the record
