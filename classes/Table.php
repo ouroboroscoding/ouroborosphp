@@ -78,6 +78,67 @@ abstract class _Table
 	}
 
 	/**
+	 * Count
+	 *
+	 * Returns the count of records in the table. If fields are passed then the
+	 * count will be based on the WHERE generated from those fields and values.
+	 * e.g. array('id' => 13, 'name' => 'chris')
+	 * @name count
+	 * @param array $fields				A hash of fields to possible values
+	 * @return uint
+	 */
+	public static function count(array $fields = array())
+	{
+		// Look up the table details
+		//	First create an instance of the calling class
+		$sClass	= get_called_class();
+		$oClass	= new $sClass(array());
+
+		/** Get the structure and details
+		 * @var _TableStructure */
+		$oStruct	= $oClass->tableStructure();
+		$sName		= $oStruct->getName();
+		$aFields	= $oStruct->getFields();
+		$sPrimary	= $oStruct->getPrimary();
+
+		// Build the list of SELECT fields
+		$sSelect	= '`' . implode('`, `', array_keys($aFields)) . '`';
+
+		// Go through each value
+		$aWhere		= array();
+		foreach($values as $sField => $mValue)
+		{
+			// First make sure the field exists
+			if(!isset($aFields[$sField])) {
+				trigger_error(__METHOD__ . ' Error: Invalid field passed in $values argument "' . $sField . '".', E_USER_ERROR);
+			}
+
+			// If the value is an array of values
+			if(is_array($mValue))
+			{
+				// Build the list of values
+				$aValues	= array();
+				foreach($mValue as $mVal) {
+					$aValues[]	= $oStruct->escapeField($sField, $mVal);
+				}
+				$aWhere[]	= "`{$sField}` IN (" . implode(',', $aValues) . ')';
+			}
+			// Else if there's just one value
+			else
+			{
+				$aWhere[]	= "`{$sField}` = " . $oStruct->escapeField($sField, $mValue);
+			}
+		}
+
+		// Build the query
+		$sSQL	= "SELECT COUNT(*) FROM `{$sName}`" .
+					' WHERE ' . implode(' AND ', $aWhere);
+
+		// Get and return the count
+		return _MySQL::select($sSQL, _MySQL::SELECT_CELL);
+	}
+
+	/**
 	 * Delete
 	 *
 	 * Delete the record from the DB
