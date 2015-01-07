@@ -106,7 +106,7 @@ abstract class _Table
 
 		// Go through each value
 		$aWhere		= array();
-		foreach($values as $sField => $mValue)
+		foreach($fields as $sField => $mValue)
 		{
 			// First make sure the field exists
 			if(!isset($aFields[$sField])) {
