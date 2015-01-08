@@ -36,8 +36,20 @@ class _MySQL
 	 *
 	 * @var mysqli[]
 	 * @access private
+	 * @static
 	 */
 	private static $aCons	= array();
+
+	/**
+	 * Log
+	 *
+	 * Set to an array if logging is turned on
+	 *
+	 * @var false|array
+	 * @access private
+	 * @static
+	 */
+	private static $aLog	= false;
 
 	/**
 	 * Constructor
@@ -110,6 +122,15 @@ class _MySQL
 	{
 		// Get the write server connection
 		$oCon	= self::fetchConnection('write');
+
+		// If logging is on
+		if(false !== self::$aLog) {
+			self::$aLog[]	= array(
+				'timestamp'	=> date('Y-m-d H:i:s'),
+				'type'		=> 'EXEC',
+				'sql'		=> $sql
+			);
+		}
 
 		// If the query fails, return false
 		if(!$oCon->real_query($sql)) {
@@ -214,6 +235,15 @@ class _MySQL
 		// Get the write server connection
 		$oCon	= self::fetchConnection('write');
 
+		// If logging is on
+		if(false !== self::$aLog) {
+			self::$aLog[]	= array(
+				'timestamp'	=> date('Y-m-d H:i:s'),
+				'type'		=> 'EXEC',
+				'sql'		=> $sql
+			);
+		}
+
 		// If the query fails, return false
 		if(!$oCon->real_query($sql)) {
 			// If we lost the MySQL connection
@@ -229,6 +259,48 @@ class _MySQL
 
 		// Return the last inserted ID
 		return $oCon->insert_id;
+	}
+
+	/**
+	 * Log Display
+	 *
+	 * Displays all the logged SQL calls
+	 *
+	 * @name logDisplay
+	 * @access public
+	 * @static
+	 * @return void
+	 */
+	public static function logDisplay()
+	{
+		// Check for Web
+		if(!_OS::isCLI()) {
+			echo '<pre>';
+		}
+
+		// Print the log
+		var_dump(self::$aLog);
+
+		// Check for Web
+		if(!_OS::isCLI()) {
+			echo '</pre>';
+		}
+	}
+
+	/**
+	 * Log On
+	 *
+	 * Turns on logging of all MySQL calls
+	 *
+	 * @name logOn
+	 * @access public
+	 * @static
+	 * @return void
+	 */
+	public static function logOn()
+	{
+		// Set the static variable to an array
+		self::$aLog	= array();
 	}
 
 	/**
@@ -248,6 +320,15 @@ class _MySQL
 	{
 		// Get the read server connection
 		$oCon	= self::fetchConnection('read');
+
+		// If logging is on
+		if(false !== self::$aLog) {
+			self::$aLog[]	= array(
+				'timestamp'	=> date('Y-m-d H:i:s'),
+				'type'		=> 'EXEC',
+				'sql'		=> $sql
+			);
+		}
 
 		// If the query fails, return false
 		if(!$oCon->real_query($sql)) {

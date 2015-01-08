@@ -54,5 +54,10 @@
 		_Config::set('caching:enabled', 'reset');
 	}
 
+	// If the user is a developer and MySQL logging is on
+	if(_OS::isDeveloper() && isset($_REQUEST['mysqllog'])) {
+		_MySQL::logOn();
+	}
+
 	// Set the timezone
 	date_default_timezone_set(_Config::get('timezone'));
