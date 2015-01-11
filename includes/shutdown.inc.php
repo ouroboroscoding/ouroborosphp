@@ -80,8 +80,8 @@
 			}
 		}
 
-		// If the user is a developer and MySQL logging is on
-		if(_OS::isDeveloper() && isset($_REQUEST['mysqllog'])) {
+		// If we're in CLI mode or the user is a developer, and MySQL logging is on
+		if((_OS::isCLI() || _OS::isDeveloper()) && isset($_REQUEST['mysqllog'])) {
 			_MySQL::logDisplay();
 		}
 	}

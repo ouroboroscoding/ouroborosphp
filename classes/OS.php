@@ -180,7 +180,7 @@ class _OS
 		} else if(isset($_SERVER['REMOTE_ADDR']) && filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP) !== false) {
 			$sIP	= $_SERVER['REMOTE_ADDR'];
 		} else {
-			trigger_error(__METHOD__ . ' Warning: No client IP exists.', E_USER_WARNING);
+			trigger_error(__METHOD__ . ' Warning: No client IP exists.' . $s, E_USER_WARNING);
 			$sIP	= '0.0.0.0';
 		}
 
