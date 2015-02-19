@@ -10,7 +10,11 @@
  */
 
 	spl_autoload_register(function ($class) {
+		// Pull in the path
+		global $gsOuroborosPath;
+
+		// If the class starts with an underscore
 		if($class[0] == '_') {
-			require 'ouroboros/classes/' . substr($class, 1) . '.php';
+			require $gsOuroborosPath . '/classes/' . substr($class, 1) . '.php';
 		}
 	});

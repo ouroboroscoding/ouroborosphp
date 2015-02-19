@@ -7,14 +7,20 @@
  * @created 2014-12-02
  */
 
+	// Get the current directory of this file
+	$gsOuroborosPath	= dirname(__FILE__);
+
 	// Set the root path of the application as the working directory
-	chdir(realpath(dirname(__FILE__) . '/..'));
+	chdir(realpath($gsOuroborosPath . '/..'));
+
+	// Pull off just the subfolder
+	$gsOuroborosPath	= substr($gsOuroborosPath, strrpos($gsOuroborosPath, '/')+1);
 
 	// Track errors at shutdown
-	require 'ouroboros/includes/shutdown.inc.php';
+	require $gsOuroborosPath . '/includes/shutdown.inc.php';
 
 	// Create autoload
-	require 'ouroboros/includes/autoload.inc.php';
+	require $gsOuroborosPath . '/includes/autoload.inc.php';
 
 	// Load config
 	_Config::init(include 'config.inc.php');
