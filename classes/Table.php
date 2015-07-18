@@ -449,6 +449,28 @@ abstract class _Table
 	}
 
 	/**
+	 *  From JSON
+	 *
+	 * Converts JSON into an associative array then creates a new table instance
+	 * from it
+	 *
+	 * @name fromJSON
+	 * @param string json_repr			The string representation of the JSON
+	 * @return Table
+	 */
+	public static function fromJSON($json)
+	{
+		// First convert the JSON to an associate array
+		$aRecord	= json_decode($json, true);
+
+		// Now get the name of the calling class
+		$sClass		= get_called_class();
+
+		// And create and return a new instance from the record
+		return new $sClass($aRecord);
+	}
+
+	/**
 	 * Get
 	 *
 	 * Returns the value of a field in the record
@@ -634,11 +656,37 @@ abstract class _Table
 	 *
 	 * @name toArray
 	 * @access public
+	 * @param array $fields				List of fields to use, else all are used
 	 * @return array
 	 */
-	public function toArray()
+	public function toArray($fields = null)
 	{
-		return $this->aRecord;
+		// If we want all fields
+		if(is_null(fields)) {
+			return $this->aRecord;
+		}
+		# Else, return just the given fields
+		else {
+			$aRet	= array();
+			foreach($fields as $f) {
+				$aRet[f]	= $this->aRecord[f];
+			}
+			return $aRet;
+		}
+	}
+
+	/**
+	 * To JSON
+	 *
+	 * Returns the raw record data as a JSON string
+	 *
+	 * @name toJSON
+	 * @access public
+	 * @return string
+	 */
+	public function toJSON()
+	{
+		return json_encode($this->aRecord);
 	}
 
 	/**

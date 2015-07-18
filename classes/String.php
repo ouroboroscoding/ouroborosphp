@@ -20,6 +20,7 @@ class _String
 	 * Invalid UTF-8 regular expression constant
 	 */
 	const INVALID_UTF8	= '/([\xC0-\xC1]|[\xF5-\xFF]|\xE0[\x80-\x9F]|\xF0[\x80-\x8F]|[\xC2-\xDF](?![\x80-\xBF])|[\xE0-\xEF](?![\x80-\xBF]{2})| [\xF0-\xF4](?![\x80-\xBF]{3})|(?<=[\x0-\x7F\xF5-\xFF])[\x80-\xBF]|(?<![\xC2-\xDF]|[\xE0-\xEF]|[\xE0-\xEF][\x80-\xBF]|[\xF0-\xF4]|[\xF0-\xF4][\x80-\xBF]|[\xF0-\xF4][\x80-\xBF]{2})[\x80-\xBF]|(?<=[\xE0-\xEF])[\x80-\xBF](?![\x80-\xBF])|(?<=[\xF0-\xF4])[\x80-\xBF](?![\x80-\xBF]{2})|(?<=[\xF0-\xF4][\x80-\xBF])[\x80-\xBF](?![\x80-\xBF]))/x';
+	const HEX_CHARS		= '/^[a-fA-F0-9]+$/';
 
 	/**
 	 * Cut
@@ -93,6 +94,20 @@ class _String
 	}
 
 	/**
+	 * Is Hexadecimal
+	 *
+	 * Returns true if the text passed represents a hexadecimal number
+	 *
+	 * @name isHex
+	 * @param string text				The text to check
+	 * @return bool
+	 */
+	public static function isHex($text)
+	{
+		return (preg_match(self::HEX_CHARS, text) !== false);
+	}
+
+	/**
 	 * Normalize
 	 *
 	 * Replaces all special alpha characters with their ascii equivalent
@@ -127,38 +142,51 @@ class _String
 	 * Random
 	 *
 	 * Generates a random string. By default this function will generate an 8
-	 * character string using lowercase and uppercase letters and digits, and no
-	 * characters will be repeated
+	 * character string using lowercase letters with possible repeating
+	 * characters
 	 *
 	 * @name random
 	 * @access public
 	 * @static
 	 * @param uint $len					Length of the password
-	 * @param bool $use_upper			Use uppercase characters?
-	 * @param bool $use_digits			Use digits?
-	 * @param bool $use_punc			Use punctuation?
-	 * @param bool $allow_dup			Allow characters to be duplicated?
+	 * @param bool $allow_duplicates	Allow characters to be duplicated?
+	 * @param array $char_opts			Character options: 'custom' or ['upper' and/or 'digits' and/or 'punctuation']
 	 * @return string					Generated string
 	 */
-	public static function random(/*uint*/ $len = 8, /*bool*/ $use_upper = true, /*bool*/ $use_digits = true, /*bool*/ $use_punc = false, /*bool*/ $allow_dup = false)
+	public static function random(/*uint*/ $len = 8, /*bool*/ $allow_duplicates = true, array $char_opts = array())
 	{
+		// If the 'custom' option was set, use only those characters
+		if(isset($char_opts['custom']))
+		{
+			$sChars	= $char_opts['custom'];
+		}
+		// Else, look for other options
+		else
+		{
+			$sChars	= 'abcdefghijkmnopqrstuvwxyz';	// Lowercase minus trouble character l (el)
+
+			// Check for additional characters
+			if(isset($char_opts['upper']) && $char_opts['upper']) {
+				$sChars += 'ABCDEFGHJKLMNPQRSTUVWXYZ';	// Uppercase minus trouble character O (oh) and L (el)
+			} else if(isset($char_opts['digits']) && $char_opts['digits']) {
+				$sChars += '123456789';					// Digits minus trouble character 0 (zero)
+			} else if(isset($char_opts['punctuation']) && $char_opts['punctuation']) {
+				$sChars += '!@#$%^&*-_+.?';				// Punctuation characters
+			}
+		}
+
+		// Init the return variable
 		$sText	= '';
-		$sChars = 'abcdefghijkmnopqrstuvwxyz';	// Lowercase minus trouble character l (el)
 
-		// Check for additional characters
-		if($use_upper)	$sChars .= 'ABCDEFGHJKLMNPQRSTUVWXYZ';	// Uppercase minus trouble character O (oh) and L (el)
-		if($use_digits) $sChars .= '123456789';					// Digits minus trouble character 0 (zero)
-		if($use_punc)	$sChars .= '!@#$%^&*-_+.?';				// Punctuation characters
-
-		// Count the number of characters
-		$iCount		= strlen($sChars);
+		// Count the number of characters we can use
+		$iCount	= strlen($sChars);
 
 		// Create a [length] of random character
 		for($i = 0; $i < $len;)
 		{
 			$sFound		= $sChars[mt_rand(0, $iCount - 1)];
 
-			if($allow_dup || !strchr($sText, $sFound))
+			if($allow_duplicates || !strchr($sText, $sFound))
 			{
 				$sText	.= $sFound;
 				++$i;
