@@ -111,10 +111,7 @@ class _MySQL
 	 * INSERT, UPDATE, ALTER, etc
 	 *
 	 * @name exec
-	 * @acces=======
-	 * @return null
->>>>>>> 4344341d5c9cca655897dfb5bc224b63b48dd136
-s public
+	 * @access public
 	 * @static
 	 * @throws _MySQL_Exception
 	 * @param string $sql				SQL statement to run
@@ -154,9 +151,6 @@ s public
 		// If there was no select, return affected rows
 		return $oCon->affected_rows;
 	}
-=======
-	 * @return null
->>>>>>> 4344341d5c9cca655897dfb5bc224b63b48dd136
 
 	/**
 	 * Fetch Connection
@@ -342,10 +336,7 @@ s public
 			if($oCon->errno == 2006) {
 				// Clear it and rerun the query after pausing for a second
 				sleep(1);
-			=======
-	 * @return null
->>>>>>> 4344341d5c9cca655897dfb5bc224b63b48dd136
-	self::clearConnection('read');
+				self::clearConnection('read');
 				return self::select($sql, $return);
 			} else {
 				throw new _MySQL_Exception(__METHOD__ . ' (' . $oCon->errno . '): ' . $oCon->error . "\n{$sql}", $oCon->errno);
