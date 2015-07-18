@@ -183,13 +183,13 @@ class _MyCache
 		);
 
 		// If there's a key
-		if(isset($aConf['key']) && !is_null($aConf['key']))
+		if(isset($aConf['password']) && !is_null($aConf['password']))
 		{
 			// Save the key
-			self::$aCons[$sWhich]['auth_key']	= $aConf['key'];
+			self::$aCons[$sWhich]['auth_key']	= $aConf['password'];
 
 			// If we fail to authenticate
-			if(!$oRedis->auth($aConf['key'])) {
+			if(!$oRedis->auth($aConf['password'])) {
 				throw new _MyCache_Exception('Failed to authenticate Redis server \'' . $server . '\'');
 			}
 
