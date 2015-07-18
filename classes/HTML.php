@@ -25,20 +25,38 @@ class _HTML
 	 * @access public
 	 * @static
 	 * @param array $options			value => text pairs
-	 * @param mixed $value				the selected value if there is one
+	 * @param mixed $value				The selected value if there is one
+	 * @param bool $assoc				If true, array is assumed to be associative, else only values are used
 	 * @return string
 	 */
-	public static function options(array $options, /*mixed*/ $value = null)
+	public static function options(array $options, /*mixed*/ $value = null, /*bool*/ $assoc = true)
 	{
 		$aOpts	= array();
-		foreach($options as $mValue => $mText)
-		{
-			$sSelected	= (!is_null($value) && $mValue == $value) ?
-							' selected="selected"' :
-							'';
 
-			$aOpts[]	= "<option value=\"{$mValue}\"{$sSelected}>{$mText}</option>";
+		// If we are using an associative array
+		if($assoc)
+		{
+			foreach($options as $mValue => $mText)
+			{
+				$sSelected	= (!is_null($value) && $mValue == $value) ?
+								' selected="selected"' :
+								'';
+
+				$aOpts[]	= "<option value=\"{$mValue}\"{$sSelected}>{$mText}</option>";
+			}
 		}
+		else
+		{
+			foreach($options as $mValue)
+			{
+				$sSelected	= (!is_null($value) && $mValue == $value) ?
+								' selected="selected"' :
+								'';
+
+				$aOpts[]	= "<option{$sSelected}>{$mValue}</option>";
+			}
+		}
+
 		$sOpts	= implode('', $aOpts);
 		unset($aOpts);
 

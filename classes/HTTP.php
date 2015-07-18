@@ -89,4 +89,39 @@ class _HTTP
 		// Return the URL
 		return $sURL;
 	}
+
+	/**
+	 * Get Primary Domain
+	 *
+	 * Parses the current hostname to generate a string that represents the top
+	 * level part of the domain name
+	 *
+	 * @name getPrimaryDomain
+	 * @access public
+	 * @static
+	 * @return string
+	 */
+	public static function getPrimaryDomain()
+	{
+		// If there's a port
+		if(strpos($_SERVER['HTTP_HOST'], ':')) {
+			// Split the HTTP_HOST into domain and port
+			list($sDomain, $sPort)	= explode(':', $_SERVER['HTTP_HOST']);
+		} else {
+			$sDomain	= $_SERVER['HTTP_HOST'];
+			$sPort		= false;
+		}
+
+		// Remove a subdomain if it exists
+		$aParts		= explode('.', $sDomain);
+		$sDomain	= implode('.', array_slice($aParts, -2));
+
+		// If there's a port
+		if($sPort) {
+			$sDomain	.= ':' . $sPort;
+		}
+
+		// Return the domain
+		return $sDomain;
+	}
 }
