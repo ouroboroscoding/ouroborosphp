@@ -34,11 +34,15 @@ class _TableStructure
 	 */
 	private static $aValidTypes = array(
 		'bool',			// Boolean value
+		'date',			// Date (yyyy-mm-dd) value
+		'datetime',		// Date time (yyyy-mm-dd hh:mm:ss) value
 		'float',		// Floating point / Decimal value
 		'int',			// Integer value
 		'ip',			// IP Address value
 		'md5',			// MD5 hash
 		'string',		// Any old string value
+		'time',			// Time (hh:mm:ss) value
+		'timestamp',	// Timestamp (uint) value
 		'uint'			// Unsigned integer value
 	);
 	/**#@-*/
@@ -161,12 +165,16 @@ class _TableStructure
 				if(is_bool($value)) return ($value) ? '1' : '0';
 				else				return '' . intval($value);
 
+			case 'date':
+			case 'datetime':
 			case 'ip':
 			case 'md5':
 			case 'string':
+			case 'time':
 				return '\'' . _MySQL::escape($value) . '\'';
 
 			case 'int':
+			case 'timestamp':
 			case 'uint':
 				return '' . intval($value);
 
@@ -253,11 +261,15 @@ class _TableStructure
 		switch($this->aField[$field])
 		{
 			case 'bool':	return is_bool($value) || $value == 0 || $value == 1;
+			case 'date':	return (bool)preg_match('/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/');
+			case 'datetime':return (bool)preg_match('/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01]) (?:[01]\d|2[0-3])(:[0-5]\d){2}$/');
 			case 'float':	return is_numeric($value);
 			case 'int':		return (bool)preg_match('/^\d+$/', $value);
 			case 'ip':		return (bool)preg_match('/^\d{1,3}(?:\.\d{1,3}){3}$/', $value);
 			case 'md5':		return (bool)preg_match('/^[a-fA-F0-9]{32}$/', $value);
 			case 'string':	return is_string($field);
+			case 'time':	return (bool)preg_match('/^(?:[01]\d|2[0-3])(:[0-5]\d){2}$/', $value);
+			case 'timestamp':
 			case 'uint':	return (bool)(0 <= $value && preg_match('/^\d+$/', $value));
 		}
 	}

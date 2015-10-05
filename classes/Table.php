@@ -304,7 +304,7 @@ abstract class _Table
 
 		// If only raw records were requested
 		if($raw) {
-			return $bSingle ? $aRecords[0] : $aRecords;
+			return $aRecords;
 		}
 
 		// Else create the instances

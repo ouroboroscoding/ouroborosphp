@@ -70,4 +70,44 @@ class _Array
 		// Return the new column
 		return $aColumn;
 	}
+
+	/**
+	 * Make Hash
+	 *
+	 * Goes through an array and creates a new hash from the key and value
+	 * fields passed
+	 *
+	 * @name makeHash
+	 * @access public
+	 * @static
+	 * @param array[] $array			An array of arrays
+	 * @param string $key				The element to use as the key
+	 * @param string $value				The element to use as the value
+	 * @return array
+	 */
+	public static function makeHash(array $array, /*string*/ $key, /*string*/ $value)
+	{
+		// The new array
+		$aHash	= array();
+
+		// Go through the passed in array
+		foreach($array as $a)
+		{
+			// If the key doesn't exist, fail
+			if(!isset($a[$key])) {
+				trigger_error(__METHOD__ . ' Error: Failed to make hash, not all arrays contain "' . $key . '".', E_USER_ERROR);
+			}
+
+			// If the value doesn't exist, fail
+			if(!isset($a[$value])) {
+				trigger_error(__METHOD__ . ' Error: Failed to make hash, not all arrays contain "' . $value . '".', E_USER_ERROR);
+			}
+
+			// Else, add it to the list
+			$aHash[$a[$key]]	= $a[$value];
+		}
+
+		// Return the new hash
+		return $aHash;
+	}
 }
